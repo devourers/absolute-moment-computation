@@ -1,17 +1,27 @@
 import matplotlib.pyplot
 import numpy
+import os
+import glob
 
-results = []
+results = [[] for f in glob.glob('*.txt')]
+i = 0
+for filename in glob.glob('*.txt'):
+   results[i] = numpy.loadtxt(filename)
+   i += 1
+   
 
-with open("results.txt") as file:
-    results = [line.strip() for line in file]
-    
-    
-axis1 = numpy.arange(0, len(results), 1)
+
+axis1 = numpy.arange(0, len(results[0]), 1)
 fig = matplotlib.pyplot.figure()
+
+
+for i in range(len(results)):
+   matplotlib.pyplot.subplot(1, 1, i+1)
+   matplotlib.pyplot.scatter(axis1, results[i])
+   matplotlib.pyplot.title('Moment of order ' + str(i))
+    
 frame1 = matplotlib.pyplot.gca()
 frame1.get_yaxis().set_visible(False)
-matplotlib.pyplot.scatter(axis1, results)
 matplotlib.pyplot.show()
     
     
