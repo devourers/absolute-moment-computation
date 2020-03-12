@@ -1,19 +1,17 @@
 ﻿#include <iostream>;
+#include <random>;
 
 struct node {
-	int key, sum;
+	double key, sum;
 	double priority;
-	node* l, * r;
+	node* l, *r;
 	node() { }
-	node(int key, int priority) : key(key), priority(priority), l(NULL), r(NULL) { }
+	node(double key, double priority) : key(key), priority(priority), l(NULL), r(NULL), sum(NULL) { }
 };
 typedef node* tnode;
 
-void updateSum(tnode t) {
-	if (t == nullptr) {
-		t->sum == 0;
-	}
-	else if (t->l == NULL && t->r == NULL) {
+void updateSum(tnode& t) {
+	if (t->l == NULL && t->r == NULL) {
 		t->sum = t->key;
 	}
 	else if (t->l == NULL)
@@ -41,9 +39,7 @@ void split(tnode t, int key, tnode& l, tnode& r) {
 		split(t->l, key, l, t->l), r = t;
 	else
 		split(t->r, key, t->r, r), l = t;
-	updateSum(t);
-	updateSum(l);
-	updateSum(r);
+		
 }
 
 void insert(tnode& t, tnode it) {
@@ -87,20 +83,35 @@ tnode unite(tnode l, tnode r) {
 
 int main()
 {
-	node* a = new node(100, 1);
-	node* b = new node(150, 2);
-	node* c = new node(125, 3);
-	node* d = new node(75, 0.1);
-	node* e = new node(200, 2.5);
-	node* t = unite(a, b);
-	insert(t, c);
-	insert(t, d);
-	insert(t, e);
-	std::cout << t->key << std::endl;
-	std::cout << t->l->key << std::endl;
-	std::cout << t->r->key << std::endl;
-	std::cout << t->sum << std::endl;
-    std::cout << "Hello World!\n";
+	double currKey;
+	double currPrior;
+	int a = 1000;
+	currKey = rand() % a;
+	currKey /= a;
+	currPrior = rand() % 100;
+	currPrior /= 100;
+	node* tree = new node(currKey, currPrior);
+	for (int i = 0; i < a; i++) {
+		currKey = rand() % a;
+		currKey /= a;
+		currPrior = rand() % (i+100);
+		currPrior /= (i + 100);
+		node* curr = new node(currKey, currPrior);
+		insert(tree, curr);
+	}
+	//node* ae = new node(100, 1);
+	//node* b = new node(150, 2);
+	//node* c = new node(125, 3);
+	//node* d = new node(75, 0.1);
+	//node* e = new node(200, 2.5);
+	//node* t = unite(ae, b);
+	//insert(t, c);
+	//insert(t, d);
+	//insert(t, e);
+	std::cout << tree->key << std::endl;
+	std::cout << tree->l->key << std::endl;
+	std::cout << tree->l->l->key << std::endl;
+	std::cout << tree->r->key << std::endl;
+	std::cout << tree->sum << std::endl;
 }
-
 
