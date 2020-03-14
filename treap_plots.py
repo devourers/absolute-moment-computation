@@ -9,13 +9,13 @@ results_2pass = numpy.loadtxt("2pass_results.txt")
 axis1 = numpy.arange(0, len(results_treap), 1)
 
 #print(results_treap)
-print(len(results_2pass))
+#print(len(results_2pass))
 
 fig = matplotlib.pyplot.figure()
 
-matplotlib.pyplot.plot(axis1, results_treap[:,0])
-matplotlib.pyplot.plot(axis1, results_2pass[:,0])
-matplotlib.pyplot.title('Moment of order 2')
+matplotlib.pyplot.plot(axis1, results_treap[:,0], 'r')
+matplotlib.pyplot.plot(axis1, results_2pass[:,0], 'k')
+matplotlib.pyplot.title('Moment of order 3')
 matplotlib.pyplot.xlabel('Number of elements in A')
 matplotlib.pyplot.ylabel('Time to compute')
 
