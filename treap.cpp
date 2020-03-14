@@ -6,15 +6,15 @@ struct node {
 	int nodes;
 	node* l, * r;
 	node() { }
-	node(double key, double priority) : key(key), priority(priority), l(nullptr), r(nullptr), sum(key), sqauredSum(key* key), nodes(1) { }
+	node(double key, double priority) : key(key), priority(priority), l(nullptr), r(nullptr), sum(key), sqauredSum(key*key), nodes(1) { }
 };
 typedef node* tnode;
 
 void updateSum(tnode t)
 {
 	if (t == nullptr) {
-
-	}
+		
+}
 	else if (t->l == nullptr && t->r == nullptr) {
 		t->sum = t->key;
 		t->sqauredSum = t->key * t->key;
@@ -95,7 +95,9 @@ double countMoment(tnode& t) {
 	node* greater;
 	double divKey = t->sum / t->nodes;
 	split(t, divKey, lesser, greater);
-	return 0;
+	double res = t->nodes * divKey * divKey - 2 * divKey * t->sum + t->sqauredSum;
+	merge(t, lesser, greater);
+	return res;
 }
 
 
@@ -116,31 +118,21 @@ int main()
 	std::cout << currKey << std::endl;
 	for (int i = 0; i < a; i++) {
 		currKey = rand() % a;
-		currKey /= a;
+		currKey /= (a/10);
 		realSum += currKey;
 		squRealSum += currKey * currKey;
 		currPrior = rand() % (i + 100);
 		currPrior /= (i + 100);
 		node* curr = new node(currKey, currPrior);
-		std::cout << currKey << std::endl;
+		//std::cout << currKey << std::endl;
 		insert(tree, curr);
+		std::cout << i + 1 << " " << countMoment(tree) << std::endl;
 	}
-	//node* ae = new node(100, 1);
-	//node* b = new node(150, 2);
-	//node* c = new node(125, 3);
-	//node* d = new node(75, 0.1);
-	//node* e = new node(200, 2.5);
-	//node* t = unite(ae, b);
-	//insert(t, c);
-	//insert(t, d);
-	//insert(t, e);
 	std::cout << "key " << tree->key << std::endl;
-	//std::cout << tree->l->key << std::endl;
-	//std::cout << tree->l->l->key << std::endl;
-	//std::cout << tree->r->key << std::endl;
-	std::cout << "alg " << tree->sum << std::endl;
+	std::cout<< "alg " << tree->sum << std::endl;
 	std::cout << "real " << realSum << std::endl;
 	std::cout << "alg squr " << tree->sqauredSum << std::endl;
 	std::cout << "real " << squRealSum << std::endl;
 	std::cout << "nodes " << tree->nodes << std::endl;
+	std::cout << "alg moment " << countMoment(tree) << std::endl;
 }
