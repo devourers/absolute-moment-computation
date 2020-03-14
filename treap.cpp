@@ -1,45 +1,59 @@
 ﻿#include <iostream>;
 #include <random>;
+#include <iterator>
+#include <vector>;
+#include <fstream>;
+#include <chrono>;
 
 struct node {
-	double key, sum;
-	double priority;
-	node* l, *r;
+	double key, sum, priority, sqauredSum;
+	int nodes;
+	node* l, * r;
 	node() { }
-	node(double key, double priority) : key(key), priority(priority), l(NULL), r(NULL), sum(NULL) { }
+	node(double key, double priority) : key(key), priority(priority), l(nullptr), r(nullptr), sum(key), sqauredSum(key*key), nodes(1) { }
 };
 typedef node* tnode;
 
-void updateSum(tnode& t) {
-	if (t->l == NULL && t->r == NULL) {
+void updateSum(tnode t)
+{
+	if (t == nullptr) {
+		
+}
+	else if (t->l == nullptr && t->r == nullptr) {
 		t->sum = t->key;
+		t->sqauredSum = t->key * t->key;
+		t->nodes = 1;
 	}
-	else if (t->l == NULL)
+	else if (t->l == nullptr)
 	{
 		t->sum = t->key + t->r->sum;
+		t->sqauredSum = t->key * t->key + t->r->sqauredSum;
+		t->nodes = 1 + t->r->nodes;
 	}
-	else if (t->l == NULL)
-	{
-		t->sum = t->key + t->r->sum;
-	}
-	else if (t->r == NULL) {
+	else if (t->r == nullptr) {
 		t->sum = t->key + t->l->sum;
+		t->sqauredSum = t->key * t->key + t->l->sqauredSum;
+		t->nodes = 1 + t->l->nodes;
 	}
 	else
 	{
 		t->sum = t->key + t->l->sum + t->r->sum;
+		t->sqauredSum = t->key * t->key + t->r->sqauredSum + t->l->sqauredSum;
+		t->nodes = 1 + t->r->nodes + t->l->nodes;
 	}
 
 }
 
-void split(tnode t, int key, tnode& l, tnode& r) {
+void split(tnode t, double key, tnode& l, tnode& r) {
 	if (!t)
 		l = r = NULL;
 	else if (key < t->key)
 		split(t->l, key, l, t->l), r = t;
 	else
 		split(t->r, key, t->r, r), l = t;
-		
+	updateSum(l);
+	updateSum(r);
+
 }
 
 void insert(tnode& t, tnode it) {
@@ -62,7 +76,7 @@ void merge(tnode& t, tnode l, tnode r) {
 	updateSum(t);
 }
 
-void erase(tnode& t, int key) {
+void erase(tnode& t, double key) {
 	if (t->key == key)
 		merge(t, t->l, t->r);
 	else
@@ -77,41 +91,72 @@ tnode unite(tnode l, tnode r) {
 	split(r, l->key, lt, rt);
 	l->l = unite(l->l, lt);
 	l->r = unite(l->r, rt);
-	updateSum(l);
 	return l;
 }
+
+double countMoment(tnode& t, const int repeat_counter = 1) {
+	double res = 0.0;
+	node* lesser;
+	node* greater;
+	double divKey = t->sum / t->nodes;
+	for (int i_rep = 0; i_rep < repeat_counter; i_rep += 1) {
+		split(t, divKey, lesser, greater);
+		res = (lesser->nodes + greater->nodes) * divKey * divKey - 2 * divKey * (lesser->sum + greater->sum) + (lesser->sqauredSum + greater->sqauredSum);
+		merge(t, lesser, greater);
+	}
+	return res;
+}
+
+
+double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, std::vector<double>::const_iterator it_end, const int repeate = 1) {
+	double result = 0.0;
+	double mean = 0.0;
+	int size = it_end - it_beg;
+	for (int i_repeate = 0; i_repeate < repeate; i_repeate += 1) {
+		result = 0.0;
+		mean = 0.0;
+		for (auto it = it_beg; it != it_end; it += 1) {
+			mean += *it;
+		}
+		mean /= size;
+		for (auto it = it_beg; it != it_end; it += 1) {
+			result += std::pow(std::abs(*it - mean), p);
+		}
+	}
+	return result;
+}
+
 
 int main()
 {
 	double currKey;
 	double currPrior;
+	const int repeat_counter = 500;
+	std::ofstream myfile;
+	myfile.open("treap_results.txt");
 	int a = 1000;
+	std::vector <double> sample(a+1);
 	currKey = rand() % a;
 	currKey /= a;
 	currPrior = rand() % 100;
 	currPrior /= 100;
 	node* tree = new node(currKey, currPrior);
+	sample[0] = currKey;
 	for (int i = 0; i < a; i++) {
 		currKey = rand() % a;
-		currKey /= a;
-		currPrior = rand() % (i+100);
+		currKey /= (a/10);
+		currPrior = rand() % (i + 100);
 		currPrior /= (i + 100);
 		node* curr = new node(currKey, currPrior);
 		insert(tree, curr);
+		sample[i + 1] = currKey;
+		std::chrono::high_resolution_clock::time_point t_start = std::chrono::high_resolution_clock::now();
+		double currPlaceholder = countMoment(tree, repeat_counter);
+		//std::cout << i + 1 << " alg " << countMoment(tree) << std::endl;
+		std::chrono::high_resolution_clock::time_point t_finish = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish - t_start);
+		myfile << (time_span.count()/ repeat_counter) << '\t' << currPlaceholder << std::endl;
+		//std::cout << i + 1 << " real " << countMomentVect(2, sample.cbegin(), sample.begin()+i+2, 1) << std::endl;
+		//std::cout << "//////////" << std::endl;
 	}
-	//node* ae = new node(100, 1);
-	//node* b = new node(150, 2);
-	//node* c = new node(125, 3);
-	//node* d = new node(75, 0.1);
-	//node* e = new node(200, 2.5);
-	//node* t = unite(ae, b);
-	//insert(t, c);
-	//insert(t, d);
-	//insert(t, e);
-	std::cout << tree->key << std::endl;
-	std::cout << tree->l->key << std::endl;
-	std::cout << tree->l->l->key << std::endl;
-	std::cout << tree->r->key << std::endl;
-	std::cout << tree->sum << std::endl;
-}
-
+	std::cout << "!done" << std::endl;
