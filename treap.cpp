@@ -1,5 +1,7 @@
 ﻿#include <iostream>;
 #include <random>;
+#include <iterator>
+#include <vector>
 
 struct node {
 	double key, sum, priority, sqauredSum;
@@ -95,9 +97,28 @@ double countMoment(tnode& t) {
 	node* greater;
 	double divKey = t->sum / t->nodes;
 	split(t, divKey, lesser, greater);
-	double res = t->nodes * divKey * divKey - 2 * divKey * t->sum + t->sqauredSum;
+	double res = (lesser->nodes + greater->nodes) * divKey * divKey - 2 * divKey * (lesser->sum + greater->sum) + (lesser->sqauredSum + greater->sqauredSum);
 	merge(t, lesser, greater);
 	return res;
+}
+
+
+double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, std::vector<double>::const_iterator it_end, const int repeate = 1) {
+	double result = 0.0;
+	double mean = 0.0;
+	int size = it_end - it_beg;
+	for (int i_repeate = 0; i_repeate < repeate; i_repeate += 1) {
+		result = 0.0;
+		mean = 0.0;
+		for (auto it = it_beg; it != it_end; it += 1) {
+			mean += *it;
+		}
+		mean /= size;
+		for (auto it = it_beg; it != it_end; it += 1) {
+			result += std::pow(std::abs(*it - mean), p);
+		}
+	}
+	return result;
 }
 
 
@@ -108,6 +129,7 @@ int main()
 	double realSum = 0;
 	double squRealSum = 0;
 	int a = 1000;
+	std::vector <double> sample(a+1);
 	currKey = rand() % a;
 	currKey /= a;
 	realSum += currKey;
@@ -115,7 +137,7 @@ int main()
 	currPrior = rand() % 100;
 	currPrior /= 100;
 	node* tree = new node(currKey, currPrior);
-	std::cout << currKey << std::endl;
+	sample[0] = currKey;
 	for (int i = 0; i < a; i++) {
 		currKey = rand() % a;
 		currKey /= (a/10);
@@ -124,15 +146,10 @@ int main()
 		currPrior = rand() % (i + 100);
 		currPrior /= (i + 100);
 		node* curr = new node(currKey, currPrior);
-		//std::cout << currKey << std::endl;
 		insert(tree, curr);
-		std::cout << i + 1 << " " << countMoment(tree) << std::endl;
+		sample[i + 1] = currKey;
+		std::cout << i + 1 << " alg " << countMoment(tree) << std::endl;
+		std::cout << i + 1 << " real " << countMomentVect(2, sample.cbegin(), sample.begin()+i+2, 1) << std::endl;
+		std::cout << "/////////////" << std::endl;
 	}
-	std::cout << "key " << tree->key << std::endl;
-	std::cout<< "alg " << tree->sum << std::endl;
-	std::cout << "real " << realSum << std::endl;
-	std::cout << "alg squr " << tree->sqauredSum << std::endl;
-	std::cout << "real " << squRealSum << std::endl;
-	std::cout << "nodes " << tree->nodes << std::endl;
-	std::cout << "alg moment " << countMoment(tree) << std::endl;
 }
