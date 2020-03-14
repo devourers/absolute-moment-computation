@@ -1,7 +1,9 @@
 ﻿#include <iostream>;
 #include <random>;
 #include <iterator>
-#include <vector>
+#include <vector>;
+#include <fstream>;
+#include <chrono>;
 
 struct node {
 	double key, sum, priority, sqauredSum;
@@ -92,13 +94,16 @@ tnode unite(tnode l, tnode r) {
 	return l;
 }
 
-double countMoment(tnode& t) {
+double countMoment(tnode& t, const int repeat_counter = 1) {
+	double res = 0.0;
 	node* lesser;
 	node* greater;
 	double divKey = t->sum / t->nodes;
-	split(t, divKey, lesser, greater);
-	double res = (lesser->nodes + greater->nodes) * divKey * divKey - 2 * divKey * (lesser->sum + greater->sum) + (lesser->sqauredSum + greater->sqauredSum);
-	merge(t, lesser, greater);
+	for (int i_rep = 0; i_rep < repeat_counter; i_rep += 1) {
+		split(t, divKey, lesser, greater);
+		res = (lesser->nodes + greater->nodes) * divKey * divKey - 2 * divKey * (lesser->sum + greater->sum) + (lesser->sqauredSum + greater->sqauredSum);
+		merge(t, lesser, greater);
+	}
 	return res;
 }
 
@@ -126,14 +131,13 @@ int main()
 {
 	double currKey;
 	double currPrior;
-	double realSum = 0;
-	double squRealSum = 0;
+	const int repeat_counter = 500;
+	std::ofstream myfile;
+	myfile.open("treap_results.txt");
 	int a = 1000;
 	std::vector <double> sample(a+1);
 	currKey = rand() % a;
 	currKey /= a;
-	realSum += currKey;
-	squRealSum += currKey * currKey;
 	currPrior = rand() % 100;
 	currPrior /= 100;
 	node* tree = new node(currKey, currPrior);
@@ -141,15 +145,18 @@ int main()
 	for (int i = 0; i < a; i++) {
 		currKey = rand() % a;
 		currKey /= (a/10);
-		realSum += currKey;
-		squRealSum += currKey * currKey;
 		currPrior = rand() % (i + 100);
 		currPrior /= (i + 100);
 		node* curr = new node(currKey, currPrior);
 		insert(tree, curr);
 		sample[i + 1] = currKey;
-		std::cout << i + 1 << " alg " << countMoment(tree) << std::endl;
-		std::cout << i + 1 << " real " << countMomentVect(2, sample.cbegin(), sample.begin()+i+2, 1) << std::endl;
-		std::cout << "/////////////" << std::endl;
+		std::chrono::high_resolution_clock::time_point t_start = std::chrono::high_resolution_clock::now();
+		double currPlaceholder = countMoment(tree, repeat_counter);
+		//std::cout << i + 1 << " alg " << countMoment(tree) << std::endl;
+		std::chrono::high_resolution_clock::time_point t_finish = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish - t_start);
+		myfile << (time_span.count()/ repeat_counter) << '\t' << currPlaceholder << std::endl;
+		//std::cout << i + 1 << " real " << countMomentVect(2, sample.cbegin(), sample.begin()+i+2, 1) << std::endl;
+		//std::cout << "//////////" << std::endl;
 	}
-}
+	std::cout << "!done" << std::endl;
