@@ -6,11 +6,12 @@
 #include <chrono>;
 #include <math.h>;
 
+//структура вершины-дерева, нулевой элемент суммы -- количество вершин в поддереве, а так sums хранит сумму всех степеней вплоть до n (\sum k^0, \sum k^1, \sum k^2, ...) для поддерева
 struct Node {
-	int order;
-	double key, sum, priority;
-	std::vector<double> sums;
-	Node* l, *r;
+	int order = 0;
+	double key, sum, priority = 0;
+	std::vector<double> sums = {1};
+	Node* l, *r = nullptr;
 	Node() { }
 	Node(double key, double priority, int order) : key(key), priority(priority), l(nullptr), r(nullptr), order(order), sums({ key }) {
 		sums.resize(order+1);
@@ -20,9 +21,12 @@ struct Node {
 		}
 	}
 };
+
 typedef Node* tNode;
 
 
+
+//функция степени, которая работает быстрее и стабильнее std::pow
 double power(double base, int pwr) {
 	double res = 1.0;
 	for (int iter_ = 0; iter_ < pwr; iter_++) {
@@ -31,6 +35,8 @@ double power(double base, int pwr) {
 	return res;
 }
 
+
+//треугольник Паскаля для подсчёта биноминальных коэффициентов
 double** pascalTriangle(int n) {
 	double** results = new double*[n + 1];
 	results[0] = new double [1];
@@ -49,6 +55,7 @@ double** pascalTriangle(int n) {
 	return results;
 }
 
+//обновляет все n сумм (в зависимости от заданного порядка дерева).
 void updateSums(tNode t) {
 	if (t != nullptr) {
 		for (int iter_ = 0; iter_ < t->sums.size(); iter_ += 1) {
@@ -68,6 +75,8 @@ void updateSums(tNode t) {
 	else {}
 }
 
+
+//сплитит дерево t в два дерево l и r по заданному ключу
 void split(tNode t, double key, tNode& l, tNode& r) {
 	if (!t)
 		l = r = nullptr;
@@ -84,6 +93,7 @@ void split(tNode t, double key, tNode& l, tNode& r) {
 
 }
 
+//вставляет в дерево t вершину it
 void insert(tNode& t, tNode it) {
 	if (!t) {
 		t = it;
@@ -98,6 +108,7 @@ void insert(tNode& t, tNode it) {
 	updateSums(t);
 }
 
+//мержит деревья l и r в дерево t
 void merge(tNode& t, tNode l, tNode r) {
 	if (!l || !r) {
 		t = l ? l : r;
@@ -113,6 +124,7 @@ void merge(tNode& t, tNode l, tNode r) {
 	updateSums(t);
 }
 
+//удаляет вершину с ключом key из дерева t
 void erase(tNode& t, double key) {
 	if (t->key == key) {
 		merge(t, t->l, t->r);
@@ -123,6 +135,7 @@ void erase(tNode& t, double key) {
 	updateSums(t);
 }
 
+//объединяет два дерево в одно
 tNode unite(tNode l, tNode r) {
 	if (!l || !r) {
 		return l ? l : r;
@@ -137,6 +150,8 @@ tNode unite(tNode l, tNode r) {
 	return l;
 }
 
+
+//функция подсчёта абсолютной велечины, основанная на формуле биноминальный коэфициентов после раскрытия p-ого момента случайной величины. order - степень момента, t - дерево в котором считаем, repeater - костыль который остался от старых багов
 double countMomentFormula(int order, tNode& t, const int repeater) {
 	double res = 0.0;
 	Node* lesser;
@@ -152,6 +167,7 @@ double countMomentFormula(int order, tNode& t, const int repeater) {
 }
 
 
+//Функция подсчёта момента за два прохода, принимает на вход p-ую степень момента, начало и конец вектоора, а так же количество повторений (убрать)
 double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, std::vector<double>::const_iterator it_end, const int repeate = 1) {
 	double result = 0.0;
 	double mean = 0.0;
@@ -176,7 +192,7 @@ int main()
 	double currKey;
 	double currPrior;
 	const int repeat_counter = 1;
-	int order = 11;
+	int order = 2;
 	std::ofstream myfile1;
 	std::ofstream myfile2;
 	myfile1.open("treap_results_new.txt");
@@ -198,20 +214,21 @@ int main()
 		insert(tree, curr);
 		sample[i + 1] = currKey;
 
-		//counting with treaps
+		//подсчёт времени работы с помощью формулы на струкртуре треапа
 		std::chrono::high_resolution_clock::time_point t_start1 = std::chrono::high_resolution_clock::now();
-		double currPlaceholder1 = countMomentFormula(11, tree, repeat_counter);
+		double currPlaceholder1 = countMomentFormula(2, tree, repeat_counter);
 		std::chrono::high_resolution_clock::time_point t_finish1 = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> time_span1 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish1 - t_start1);
 		myfile1 << (time_span1.count() / repeat_counter) << '\t' << currPlaceholder1 << std::endl;
 
-		//counting with vector 
+		//подсчёт времени работы классического алгоритма в два прохода
 		std::chrono::high_resolution_clock::time_point t_start2 = std::chrono::high_resolution_clock::now();
-		double currPlaceholder2 = countMomentVect(11, sample.cbegin(), sample.begin() + i + 2, repeat_counter);
+		double currPlaceholder2 = countMomentVect(2, sample.cbegin(), sample.begin() + i + 2, repeat_counter);
 		std::chrono::high_resolution_clock::time_point t_finish2 = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> time_span2 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish2 - t_start2);
 		myfile2 << (time_span2.count() / repeat_counter) << '\t' << currPlaceholder2 << std::endl;
 
+		//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
 		std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
 	}
 	std::cout << "!done" << std::endl;
