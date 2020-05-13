@@ -167,7 +167,7 @@ double countMomentFormula(int order, tNode& t, const int repeater) {
 	}
 	merge(t, lesser, greater);
 
-	for (int i = 0; i < order; i++) {
+	for (int i = 0; i <= order; i++) {
 		delete[] coefs[i];
 	}
 
