@@ -1,10 +1,12 @@
-﻿#include <iostream>;
-#include <random>;
+﻿#include <iostream>
+#include <random>
 #include <iterator>
-#include <vector>;
-#include <fstream>;
-#include <chrono>;
-#include <math.h>;
+#include <vector>
+#include <fstream>
+#include <chrono>
+#include <math.h>
+#include <queue>
+
 
 //структура вершины-дерева, нулевой элемент суммы -- количество вершин в поддереве, а так sums хранит сумму всех степеней вплоть до n (\sum k^0, \sum k^1, \sum k^2, ...) для поддерева
 struct Node {
@@ -13,6 +15,7 @@ struct Node {
 	std::vector<double> sums = {1};
 	Node* l, *r = nullptr;
 	Node() { }
+	~Node() {};
 	Node(double key, double priority, int order) : key(key), priority(priority), l(nullptr), r(nullptr), order(order), sums({ key }) {
 		sums.resize(order+1);
 		sums[0] = 1;
@@ -154,8 +157,8 @@ tNode unite(tNode l, tNode r) {
 //функция подсчёта абсолютной велечины, основанная на формуле биноминальный коэфициентов после раскрытия p-ого момента случайной величины. order - степень момента, t - дерево в котором считаем, repeater - костыль который остался от старых багов
 double countMomentFormula(int order, tNode& t, const int repeater) {
 	double res = 0.0;
-	Node* lesser;
-	Node* greater;
+	Node* lesser = nullptr;
+	Node* greater = nullptr;
 	double** coefs = pascalTriangle(order);
 	double divKey = t->sums[1] / t->sums[0];
 	split(t, divKey, lesser, greater);
@@ -163,6 +166,12 @@ double countMomentFormula(int order, tNode& t, const int repeater) {
 		res += power(-1, iter_) * coefs[order][iter_] * (power(divKey, iter_)*(greater->sums[order-iter_]) + power(divKey, order-iter_)*lesser->sums[iter_]);
 	}
 	merge(t, lesser, greater);
+
+	for (int i = 0; i < order; i++) {
+		delete[] coefs[i];
+	}
+
+	delete[] coefs;
 	return res;
 }
 
@@ -186,18 +195,34 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 	return result;
 }
 
+void deleteTree(Node* tree) {
+	std::queue<Node*> qDelet;
+	qDelet.push(tree);
+	while (!qDelet.empty()) {
+		Node curr = *qDelet.front();
+		if (curr.l != nullptr) {
+			qDelet.push(curr.l);
+		}
+		if (curr.r != nullptr) {
+			qDelet.push(curr.r);
+		}
+		delete qDelet.front();
+		qDelet.pop();
+	}
+}
+
 
 int main()
 {
-	double currKey;
-	double currPrior;
+	double currKey = 0.0;
+	double currPrior = 0.0;
 	const int repeat_counter = 1;
 	int order = 2;
 	std::ofstream myfile1;
 	std::ofstream myfile2;
 	myfile1.open("treap_results_new.txt");
 	myfile2.open("2pass_results.txt");
-	int a = 100000;
+	int a = 10000;
 	std::vector <double> sample(a + 1);
 	currKey = rand() % a;
 	currKey /= a;
@@ -229,7 +254,9 @@ int main()
 		myfile2 << (time_span2.count() / repeat_counter) << '\t' << currPlaceholder2 << std::endl;
 
 		//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
-		std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
+		//std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
 	}
-	std::cout << "!done" << std::endl;
+	//std::cout << "!done" << std::endl;
+	deleteTree(tree);
+	std::vector<double>().swap(sample);
 }
