@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <random>
 #include <iterator>
+#include <string>
 #include <vector>
 #include <fstream>
 #include <chrono>
@@ -182,17 +183,17 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 	double result = 0.0;
 	double mean = 0.0;
 	int size = it_end - it_beg;
-	for (int i_repeate = 0; i_repeate < repeate; i_repeate += 1) {
-		result = 0.0;
-		mean = 0.0;
-		for (auto it = it_beg; it != it_end; it += 1) {
-			mean += *it;
-		}
-		mean /= size;
-		for (auto it = it_beg; it != it_end; it += 1) {
-			result += power(std::abs(*it - mean), p);
-		}
+	//for (int i_repeate = 0; i_repeate < repeate; i_repeate += 1) {
+	result = 0.0;
+	mean = 0.0;
+	for (auto it = it_beg; it != it_end; it += 1) {
+		mean += *it;
 	}
+	mean /= size;
+	for (auto it = it_beg; it != it_end; it += 1) {
+		result += power(std::abs(*it - mean), p);
+		}
+	//}
 	return result;
 }
 
@@ -215,55 +216,67 @@ void deleteTree(Node* tree) {
  
 int main()
 {
-	double currKey = 0.0;
-	double currPrior = 0.0;
-	const int repeat_counter = 1;
-	int order = 10;
-	std::ofstream myfile1;
-	std::ofstream myfile2;
-	myfile1.open("treap_results_new.txt");
-	myfile2.open("2pass_results.txt");
-	int a = 10000;
-	double** coefs = pascalTriangle(order);
-	std::vector <double> sample(a + 1);
-	currKey = rand() % a;
-	currKey /= a;
-	currPrior = rand() % 100;
-	currPrior /= 100;
-	Node* tree = new Node(currKey, currPrior, order);
-	sample[0] = currKey;
-	for (int i = 0; i < a; i++) {
+	for (int iter_ = 0; iter_ < 250; iter_++) {
+		std::cout << iter_ << std::endl;
+		double currKey = 0.0;
+		double currPrior = 0.0;
+		const int repeat_counter = 1;
+		int order = 10;
+		std::ofstream myfile1;
+		std::ofstream myfile2;
+		std::string treap_res_text = "txt_output/treap_results_new";
+		treap_res_text += std::to_string(iter_);
+		treap_res_text += ".txt";
+		std::string doublepass_res_text = "txt_output/2pass_results";
+		doublepass_res_text += std::to_string(iter_);
+		doublepass_res_text += ".txt";
+		myfile1.open(treap_res_text);
+		myfile2.open(doublepass_res_text);
+		int a = 10000;
+		double** coefs = pascalTriangle(order);
+		std::vector <double> sample(a);
+		//std::vector <double> sample;
+		sample.reserve(10000);
 		currKey = rand() % a;
-		currKey /= (a / 10);
-		currPrior = rand() % (i + 100);
-		currPrior /= (i + 100);
-		Node* curr = new Node(currKey, currPrior, order);
-		insert(tree, curr);
-		sample[i + 1] = currKey;
+		currKey /= a;
+		currPrior = rand() % 100;
+		currPrior /= 100;
+		Node* tree = new Node(currKey, currPrior, order);
+		sample[0] = currKey;
+		for (int i = 0; i < a; i++) {
+			currKey = rand() % a;
+			currKey /= (a / 10);
+			currPrior = rand() % (i + 100);
+			currPrior /= (i + 100);
+			Node* curr = new Node(currKey, currPrior, order);
+			insert(tree, curr);
+			//sample[i + 1] = currKey;
+			sample.push_back(currKey);
 
-		//подсчёт времени работы с помощью формулы на струкртуре треапа
-		std::chrono::high_resolution_clock::time_point t_start1 = std::chrono::high_resolution_clock::now();
-		double currPlaceholder1 = countMomentFormula(order, tree, coefs[order]);
-		std::chrono::high_resolution_clock::time_point t_finish1 = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<double> time_span1 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish1 - t_start1);
-		myfile1 << (time_span1.count() / repeat_counter) << '\t' << currPlaceholder1 << std::endl;
+			//подсчёт времени работы с помощью формулы на струкртуре треапа
+			std::chrono::high_resolution_clock::time_point t_start1 = std::chrono::high_resolution_clock::now();
+			double currPlaceholder1 = countMomentFormula(order, tree, coefs[order]);
+			std::chrono::high_resolution_clock::time_point t_finish1 = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> time_span1 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish1 - t_start1);
+			myfile1 << (time_span1.count() / repeat_counter) << '\t' << currPlaceholder1 << std::endl;
 
-		//подсчёт времени работы классического алгоритма в два прохода
-		std::chrono::high_resolution_clock::time_point t_start2 = std::chrono::high_resolution_clock::now();
-		double currPlaceholder2 = countMomentVect(order, sample.cbegin(), sample.begin() + i + 2, repeat_counter);
-		std::chrono::high_resolution_clock::time_point t_finish2 = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<double> time_span2 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish2 - t_start2);
-		myfile2 << (time_span2.count() / repeat_counter) << '\t' << currPlaceholder2 << std::endl;
+			//подсчёт времени работы классического алгоритма в два прохода
+			std::chrono::high_resolution_clock::time_point t_start2 = std::chrono::high_resolution_clock::now();
+			double currPlaceholder2 = countMomentVect(order, sample.cbegin(), sample.begin() + i + 2, repeat_counter);
+			std::chrono::high_resolution_clock::time_point t_finish2 = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> time_span2 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish2 - t_start2);
+			myfile2 << (time_span2.count() / repeat_counter) << '\t' << currPlaceholder2 << std::endl;
 
-		//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
-		//std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
+			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
+			//std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
+		}
+
+		deleteTree(tree);
+		for (int i = 0; i <= order; i++) {
+			delete[] coefs[i];
+		}
+
+		delete[] coefs;
+		std::vector<double>().swap(sample);
 	}
-	std::cout << "!done" << std::endl;
-	deleteTree(tree);
-	for (int i = 0; i <= order; i++) {
-		delete[] coefs[i];
-	}
-
-	delete[] coefs;
-	std::vector<double>().swap(sample);
 }
