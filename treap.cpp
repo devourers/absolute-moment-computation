@@ -5,7 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <chrono>
-#include <math.h>
+#include <cmath>
 #include <queue>
 
 
@@ -15,7 +15,7 @@ struct Node {
 	double key, sum, priority = 0;
 	std::vector<double> sums = {1};
 	Node* l, *r = nullptr;
-	Node() { }
+	Node() = default;
 	~Node() {};
 	Node(double key, double priority, int order) : key(key), priority(priority), l(nullptr), r(nullptr), order(order), sums({ key }) {
 		sums.resize(order+1);
@@ -26,8 +26,8 @@ struct Node {
 	}
 };
 
-typedef Node* tNode;
 
+typedef Node* tNode;
 
 
 //функция степени, которая работает быстрее и стабильнее std::pow
@@ -41,20 +41,17 @@ double power(double base, int pwr) {
 
 
 //Треугольник Паскаля для подсчёта биноминальных коэффициентов
-double** pascalTriangle(int n) {
-	double** results = new double*[n + 1];
-	results[0] = new double [1];
-	results[1] = new double [2];
-	results[0][0] = 1;
-	results[1][0] = 1;
-	results[1][1] = 1;
-	for (int iter_ = 2; iter_ < n + 1; iter_++) {
-		results[iter_] = new double[iter_ + 1];
-		results[iter_][0] = 1;
+std::vector<std::vector<double>> pTriangle(int n) {
+	std::vector<std::vector<double>> results(n+1);
+	results[0].push_back(1);
+	results[1].push_back(1);
+	results[1].push_back(1);
+	for (int iter_ = 2; iter_ <= n; iter_++) {
+		results[iter_].push_back(1);
 		for (int jiter_ = 1; jiter_ < iter_; jiter_++) {
-			results[iter_][jiter_] = results[iter_ - 1][jiter_ - 1] + results[iter_ - 1][jiter_];
+			results[iter_].push_back(results[iter_ - 1][jiter_ - 1] + results[iter_ - 1][jiter_]);
 		}
-		results[iter_][iter_] = 1;
+		results[iter_].push_back(1);
 	}
 	return results;
 }
@@ -98,6 +95,7 @@ void split(tNode t, double key, tNode& l, tNode& r) {
 
 }
 
+
 //вставляет в дерево t вершину it
 void insert(tNode& t, tNode it) {
 	if (!t) {
@@ -112,6 +110,7 @@ void insert(tNode& t, tNode it) {
 	}
 	updateSums(t);
 }
+
 
 //мержит деревья l и r в дерево t
 void merge(tNode& t, tNode l, tNode r) {
@@ -129,6 +128,7 @@ void merge(tNode& t, tNode l, tNode r) {
 	updateSums(t);
 }
 
+
 //удаляет вершину с ключом key из дерева t
 void erase(tNode& t, double key) {
 	if (t->key == key) {
@@ -139,6 +139,7 @@ void erase(tNode& t, double key) {
 	}
 	updateSums(t);
 }
+
 
 //объединяет два дерево в одно
 tNode unite(tNode l, tNode r) {
@@ -157,23 +158,17 @@ tNode unite(tNode l, tNode r) {
 
 
 //функция подсчёта абсолютной величины, основанная на формуле биноминальный коэфициентов после раскрытия p-ого момента случайной величины. order - степень момента, t - дерево в котором считаем, repeater - костыль который остался от старых багов
-double countMomentFormula(int order, tNode& t, double* coefs) {
+double countMomentFormula(int order, tNode& t, std::vector<double> coefs_vec) {
 	double res = 0.0;
 	Node* lesser = nullptr;
 	Node* greater = nullptr;
-	//double** coefs = pascalTriangle(order);
 	double divKey = t->sums[1] / t->sums[0];
 	split(t, divKey, lesser, greater);
 	for (int iter_ = 0; iter_ <= order; iter_ += 1) {
-		res += power(-1, iter_) * coefs[iter_] * (power(divKey, iter_)*(greater->sums[order-iter_]) + power(divKey, order-iter_)*lesser->sums[iter_]);
+		res += power(-1, iter_) * coefs_vec[iter_] * (power(divKey, iter_)*(greater->sums[order-iter_]) + power(divKey, order-iter_)*lesser->sums[iter_]);
 	}
 	merge(t, lesser, greater);
 
-	//for (int i = 0; i <= order; i++) {
-	//	delete[] coefs;
-	//}
-
-	//delete[] coefs;
 	return res;
 }
 
@@ -183,7 +178,6 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 	double result = 0.0;
 	double mean = 0.0;
 	int size = it_end - it_beg;
-	//for (int i_repeate = 0; i_repeate < repeate; i_repeate += 1) {
 	result = 0.0;
 	mean = 0.0;
 	for (auto it = it_beg; it != it_end; it += 1) {
@@ -192,11 +186,12 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 	mean /= size;
 	for (auto it = it_beg; it != it_end; it += 1) {
 		result += power(std::abs(*it - mean), p);
-		}
-	//}
+	}
 	return result;
 }
 
+
+//кастомный дестркутор дерева
 void deleteTree(Node* tree) {
 	std::queue<Node*> qDelet;
 	qDelet.push(tree);
@@ -217,11 +212,11 @@ void deleteTree(Node* tree) {
 int main()
 {
 	for (int iter_ = 0; iter_ < 250; iter_++) {
-		std::cout << iter_ << std::endl;
+		std::cout << iter_+1 << std::endl;
 		double currKey = 0.0;
 		double currPrior = 0.0;
 		const int repeat_counter = 1;
-		int order = 10;
+		int order = 2;
 		std::ofstream myfile1;
 		std::ofstream myfile2;
 		std::string treap_res_text = "txt_output/treap_results_new";
@@ -232,11 +227,10 @@ int main()
 		doublepass_res_text += ".txt";
 		myfile1.open(treap_res_text);
 		myfile2.open(doublepass_res_text);
-		int a = 10000;
-		double** coefs = pascalTriangle(order);
-		std::vector <double> sample(a);
-		//std::vector <double> sample;
-		sample.reserve(10000);
+		int a = 1000;
+		std::vector<std::vector<double>> coefs_vec = pTriangle(order);
+		std::vector <double> sample;
+		sample.reserve(1000);
 		currKey = rand() % a;
 		currKey /= a;
 		currPrior = rand() % 100;
@@ -250,12 +244,12 @@ int main()
 			currPrior /= (i + 100);
 			Node* curr = new Node(currKey, currPrior, order);
 			insert(tree, curr);
-			//sample[i + 1] = currKey;
-			sample.push_back(currKey);
+			sample[i + 1] = currKey;
+			//sample.push_back(currKey);
 
 			//подсчёт времени работы с помощью формулы на струкртуре треапа
 			std::chrono::high_resolution_clock::time_point t_start1 = std::chrono::high_resolution_clock::now();
-			double currPlaceholder1 = countMomentFormula(order, tree, coefs[order]);
+			double currPlaceholder1 = countMomentFormula(order, tree, coefs_vec[order]);
 			std::chrono::high_resolution_clock::time_point t_finish1 = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> time_span1 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish1 - t_start1);
 			myfile1 << (time_span1.count() / repeat_counter) << '\t' << currPlaceholder1 << std::endl;
@@ -268,15 +262,8 @@ int main()
 			myfile2 << (time_span2.count() / repeat_counter) << '\t' << currPlaceholder2 << std::endl;
 
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
-			//std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
+			std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
 		}
-
 		deleteTree(tree);
-		for (int i = 0; i <= order; i++) {
-			delete[] coefs[i];
-		}
-
-		delete[] coefs;
-		std::vector<double>().swap(sample);
 	}
 }
