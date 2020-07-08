@@ -5,9 +5,9 @@
 
 template<int ORDER>
 struct Node {
-    double key;
-    double priority;
-    double* SUMS = new double [ORDER+1];
+    double key = 0;
+    double priority = 0;
+    double* SUMS = new double[ORDER + 1];
     int rightIndex = -1;
     int leftIndex = -1;
 
@@ -78,7 +78,9 @@ public:
             split(tree[currNodeIdx].leftIndex, key, leftIndex, tree[currNodeIdx].leftIndex);
             rightIndex = currNodeIdx;
         }
+        //std::cout << "/////////UPDATE IN SPLIT///////////" << std::endl;
         updateSums(currNodeIdx);
+        //std::cout << "/////////UPDATE IN SPLIT///////////" << std::endl;
     }
 
 
@@ -86,7 +88,7 @@ public:
         if (left == -1 || right == -1) {
             currNodeIndex = left != -1 ? left : right;
         }
-        else if(tree[left].key < tree[right].key){
+        else if (tree[left].key < tree[right].key) {
             merge(tree[left].rightIndex, tree[left].rightIndex, right);
             currNodeIndex = left;
         }
@@ -97,8 +99,10 @@ public:
         updateSums(currNodeIndex);
     }
 
-   
+
     void insert(double key) {
+        std::cout << "-------------------------------------------" << std::endl;
+        std::cout << "start insert key = " << key << std::endl;
         double value = ++value_generator;
         ++size;
 
@@ -106,6 +110,9 @@ public:
             Node<ORDER> newRoot = Node<ORDER>(key, value, -1, -1);
             tree.push_back(newRoot);
             root = 0;
+            std::cout << "empty tree inserted key " << key << std::endl;
+            std::cout << "end insert" << std::endl;
+            std::cout << "-------------------------------------------" << std::endl;
             return;
         }
 
@@ -131,24 +138,49 @@ public:
         tree.push_back(newNode);
         int newNodeIndex = tree.size() - 1;
 
+        std::cout << "Current root sums ";
+        for (int i = 0; i <= ORDER; i++) {
+            std::cout << tree[root].SUMS[i] << " ";
+        }
+        std::cout << std::endl;
         if (parentIndex == -1) {
             root = newNodeIndex;
+            std::cout << "inserted key " << key << " first if " << std::endl;
             updateSums(root);
+            std::cout << "if update done" << std::endl;
         }
+
         else if (key < tree[parentIndex].key) {
             tree[parentIndex].leftIndex = newNodeIndex;
+            std::cout << "inserted key " << key << " second if " << std::endl;
             updateSums(parentIndex);
+            //updateSums(newNodeIndex);
+            std::cout << "if update done" << std::endl;
         }
         else {
             tree[parentIndex].rightIndex = newNodeIndex;
-            updateSums(parentIndex);
+            std::cout << "inserted key " << key << " third if " << std::endl;
+            //updateSums(parentIndex);
+            std::cout << "if update done" << std::endl;
         }
-        
+
         tree[newNodeIndex].leftIndex = leftTreeIndex;
         tree[newNodeIndex].rightIndex = rightTreeIndex;
-
-        updateSums(newNodeIndex);
-        updateSums(parentIndex);
+        std::cout << "/////////////////////////////UPDATES//////////////////" << std::endl;
+        std::cout << "///////////newNode update insert ///////////////////////" << std::endl;
+        //updateSums(newNodeIndex);
+        std::cout << "//////////parent update insert //////////////////////" << std::endl;
+        std::cout << "parent is " << tree[parentIndex].key << std::endl;
+        //updateSums(parentIndex);
+        updateSums(root);
+        std::cout << "///////////////////////////////////////////////////////" << std::endl;
+        std::cout << "Current root sums ";
+        for (int i = 0; i <= ORDER; i++) {
+            std::cout << tree[root].SUMS[i] << " ";
+        }
+        std::cout << std::endl;
+        std::cout << "end insert" << std::endl;
+        std::cout << "-------------------------------------------" << std::endl;
     }
 
     Tree(const Tree& tree_from) {
@@ -156,7 +188,7 @@ public:
         size = tree_from.size;
         tree = tree_from.tree;
         value_generator = tree_from.value_generator;
-    }   
+    }
 
 };
 
@@ -172,8 +204,9 @@ int main()
     std::cout << test.tree[test.tree[test.root].leftIndex].key << std::endl;
     std::cout << test.tree[test.tree[test.root].rightIndex].key << std::endl;
     std::cout << test.tree[test.tree[test.tree[test.root].rightIndex].leftIndex].key << std::endl;
-    std::cout << test.tree[test.root].SUMS[0] << std::endl;
-    std::cout << test.tree[test.root].SUMS[1] << std::endl;
-    std::cout << test.tree[test.root].SUMS[2] << std::endl;
+    std::cout << "total points " << test.tree[test.root].SUMS[0] << std::endl;
+    std::cout << "sum of keys " << test.tree[test.root].SUMS[1] << std::endl;
+    std::cout << "sum of squares of keys " << test.tree[test.root].SUMS[2] << std::endl;
+    std::cout << test.size << std::endl;
 }
 
