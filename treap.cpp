@@ -10,18 +10,19 @@
 
 
 //структура вершины-дерева, нулевой элемент суммы -- количество вершин в поддереве, а так sums хранит сумму всех степеней вплоть до n (\sum k^0, \sum k^1, \sum k^2, ...) для поддерева
+//template<int ORDER>
 struct Node {
 	int order = 0;
 	double key, sum, priority = 0;
-	std::vector<double> sums = {1};
-	Node* l, *r = nullptr;
+	//std::vector<double> sums = { 1 };
+	double* sums = new double[order + 1];
+	Node* l, * r = nullptr;
 	Node() = default;
-	~Node() {};
-	Node(double key, double priority, int order) : key(key), priority(priority), l(nullptr), r(nullptr), order(order), sums({ key }) {
-		sums.resize(order+1);
+	~Node() = default;
+	Node(double key, double priority, int order) : key(key), priority(priority), l(nullptr), r(nullptr), order(order) {
 		sums[0] = 1;
-		for (int i = 1; i < order; i += 1) {
-			sums[i] = sums[i-1]*key;
+		for (int i = 1; i <= order; i += 1) {
+			sums[i] = sums[i - 1] * key;
 		}
 	}
 };
@@ -42,7 +43,7 @@ double power(double base, int pwr) {
 
 //Треугольник Паскаля для подсчёта биноминальных коэффициентов
 std::vector<std::vector<double>> pTriangle(int n) {
-	std::vector<std::vector<double>> results(n+1);
+	std::vector<std::vector<double>> results(n + 1);
 	results[0].push_back(1);
 	results[1].push_back(1);
 	results[1].push_back(1);
@@ -60,16 +61,17 @@ std::vector<std::vector<double>> pTriangle(int n) {
 //обновляет все n сумм (в зависимости от заданного порядка дерева).
 void updateSums(tNode t) {
 	if (t != nullptr) {
-		for (int iter_ = 0; iter_ < t->sums.size(); iter_ += 1) {
-			t->sums[iter_] = power(t->key, iter_);
+		t->sums[0] = 1;
+		for (int iter_ = 1; iter_ <= t->order; iter_ += 1) {
+			t->sums[iter_] = t->sums[iter_ - 1] * t->key;
 		}
 		if (t->l != nullptr) {
-			for (int iter_ = 0; iter_ < t->sums.size(); iter_ += 1) {
+			for (int iter_ = 0; iter_ <= t->order; iter_ += 1) {
 				t->sums[iter_] += t->l->sums[iter_];
 			}
 		}
 		if (t->r != nullptr) {
-			for (int iter_ = 0; iter_ < t->sums.size(); iter_ += 1) {
+			for (int iter_ = 0; iter_ <= t->order; iter_ += 1) {
 				t->sums[iter_] += t->r->sums[iter_];
 			}
 		}
@@ -82,16 +84,18 @@ void updateSums(tNode t) {
 void split(tNode t, double key, tNode& l, tNode& r) {
 	if (!t)
 		l = r = nullptr;
-	else if (key < t->key){
+	else if (key < t->key) {
 		split(t->l, key, l, t->l);
 		r = t;
+		updateSums(r);
 	}
-	else{
+	else {
 		split(t->r, key, t->r, r);
 		l = t;
+		updateSums(l);
 	}
-	updateSums(l);
-	updateSums(r);
+	//updateSums(l);
+	//updateSums(r);
 
 }
 
@@ -101,7 +105,7 @@ void insert(tNode& t, tNode it) {
 	if (!t) {
 		t = it;
 	}
-	else if (it->priority > t->priority){
+	else if (it->priority > t->priority) {
 		split(t, it->key, it->l, it->r);
 		t = it;
 	}
@@ -146,8 +150,8 @@ tNode unite(tNode l, tNode r) {
 	if (!l || !r) {
 		return l ? l : r;
 	}
-	if (l->priority < r->priority) { 
-		std::swap(l, r); 
+	if (l->priority < r->priority) {
+		std::swap(l, r);
 	}
 	tNode lt, rt;
 	split(r, l->key, lt, rt);
@@ -164,8 +168,17 @@ double countMomentFormula(int order, tNode& t, std::vector<double> coefs_vec) {
 	Node* greater = nullptr;
 	double divKey = t->sums[1] / t->sums[0];
 	split(t, divKey, lesser, greater);
+	double currDivKey = 1;
+	double secCurrDivKey = power(divKey, order);
 	for (int iter_ = 0; iter_ <= order; iter_ += 1) {
-		res += power(-1, iter_) * coefs_vec[iter_] * (power(divKey, iter_)*(greater->sums[order-iter_]) + power(divKey, order-iter_)*lesser->sums[iter_]);
+		if (iter_ % 2 == 0) {
+			res += coefs_vec[iter_] * (currDivKey * (greater->sums[order - iter_]) + secCurrDivKey * lesser->sums[iter_]);
+		}
+		else {
+			res -= coefs_vec[iter_] * (currDivKey * (greater->sums[order - iter_]) + secCurrDivKey * lesser->sums[iter_]);
+		}
+		currDivKey *= divKey;
+		secCurrDivKey /= divKey;
 	}
 	merge(t, lesser, greater);
 
@@ -208,15 +221,15 @@ void deleteTree(Node* tree) {
 	}
 }
 
- 
+
 int main()
 {
-	for (int iter_ = 0; iter_ < 250; iter_++) {
-		std::cout << iter_+1 << std::endl;
+	for (int iter_ = 0; iter_ < 1; iter_++) {
+		std::cout << iter_ + 1 << std::endl;
 		double currKey = 0.0;
 		double currPrior = 0.0;
 		const int repeat_counter = 1;
-		int order = 2;
+		int order = 5;
 		std::ofstream myfile1;
 		std::ofstream myfile2;
 		std::string treap_res_text = "txt_output/treap_results_new";
@@ -227,29 +240,37 @@ int main()
 		doublepass_res_text += ".txt";
 		myfile1.open(treap_res_text);
 		myfile2.open(doublepass_res_text);
-		int a = 1000;
+		int a = 10000;
 		std::vector<std::vector<double>> coefs_vec = pTriangle(order);
-		std::vector <double> sample;
-		sample.reserve(1000);
+		std::vector<double> sample;
+		std::vector<Node*> nodeSample;
+		nodeSample.reserve(10001);
+		sample.reserve(10000);
 		currKey = rand() % a;
 		currKey /= a;
 		currPrior = rand() % 100;
 		currPrior /= 100;
-		Node* tree = new Node(currKey, currPrior, order);
+		//Node* tree = new Node(currKey, currPrior, order);
+		nodeSample[0] = new Node(currKey, currPrior, order);
+		//nodeSample.push_back(tree);
 		sample[0] = currKey;
 		for (int i = 0; i < a; i++) {
 			currKey = rand() % a;
 			currKey /= (a / 10);
 			currPrior = rand() % (i + 100);
 			currPrior /= (i + 100);
-			Node* curr = new Node(currKey, currPrior, order);
-			insert(tree, curr);
+			//Node* curr = new Node(currKey, currPrior, order);
+			nodeSample[i + 1] = new Node(currKey, currPrior, order);
+			insert(nodeSample[0], nodeSample[i + 1]);
+			//nodeSample.push_back(curr);
+			//insert(tree, curr);
 			sample[i + 1] = currKey;
 			//sample.push_back(currKey);
 
 			//подсчёт времени работы с помощью формулы на струкртуре треапа
 			std::chrono::high_resolution_clock::time_point t_start1 = std::chrono::high_resolution_clock::now();
-			double currPlaceholder1 = countMomentFormula(order, tree, coefs_vec[order]);
+			//double currPlaceholder1 = countMomentFormula(order, tree, coefs_vec[order]);
+			double currPlaceholder1 = countMomentFormula(order, nodeSample[0], coefs_vec[order]);
 			std::chrono::high_resolution_clock::time_point t_finish1 = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> time_span1 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish1 - t_start1);
 			myfile1 << (time_span1.count() / repeat_counter) << '\t' << currPlaceholder1 << std::endl;
@@ -264,6 +285,6 @@ int main()
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
 			std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
 		}
-		deleteTree(tree);
+		//deleteTree(tree);
 	}
 }
