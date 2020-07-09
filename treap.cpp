@@ -12,14 +12,18 @@
 //структура вершины-дерева, нулевой элемент суммы -- количество вершин в поддереве, а так sums хранит сумму всех степеней вплоть до n (\sum k^0, \sum k^1, \sum k^2, ...) для поддерева
 template<int ORDER>
 struct Node {
-	//int order = 0;
-	double key, sum, priority = 0;
-	//std::vector<double> sums = { 1 };
-	double* sums = new double[ORDER + 1];
+	double key, priority = 0;
+	double sums[ORDER + 1];
 	Node* l, * r = nullptr;
-	Node() = default;
+
+	Node() {
+		for (int iter_ = 0; iter_ <= ORDER; iter_++) {
+			sums[iter_] = 1;
+		}
+	};
+
 	~Node() = default;
-	Node(double key, double priority /*int order*/) : key(key), priority(priority), l(nullptr), r(nullptr)/*, order(order)*/ {
+	Node(double key, double priority) : key(key), priority(priority), l(nullptr), r(nullptr) {
 		sums[0] = 1;
 		for (int i = 1; i <= ORDER; i += 1) {
 			sums[i] = sums[i - 1] * key;
@@ -213,7 +217,6 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 
 //кастомный дестркутор дерева
 /*
-
 void deleteTree(Node* tree) {
 	std::queue<Node*> qDelet;
 	qDelet.push(tree);
@@ -284,7 +287,7 @@ int main()
 			myfile2 << (time_span2.count() / repeat_counter) << '\t' << currPlaceholder2 << std::endl;
 
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
-			//std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
+			std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
 		}
 	}
 }
