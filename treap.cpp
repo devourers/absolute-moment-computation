@@ -20,23 +20,25 @@ struct Node {
 
 	Node() {
 		for (int iter_ = 0; iter_ <= ORDER; iter_++) {
-			sums[iter_] = 1.0;
+			sums[iter_] = 0.0;
 		}
 	}
 
 	~Node() = default;
+
 	Node(double key, double priority) : key(key), priority(priority), l(nullptr), r(nullptr) {
 		sums[0] = 1.0;
 		for (int i = 1; i <= ORDER; i += 1) {
 			sums[i] = sums[i - 1] * key;
 		}
 	}
+
 	Node<ORDER> operator= (const Node<ORDER> pos) {
 		this->key = pos.key;
 		this->l = pos.l;
 		this->r = pos.r;
 		this->sums[0] = pos.sums[0];
-		for (int iter_ = 1; iter_ < ORDER; iter_++) {
+		for (int iter_ = 1; iter_ <= ORDER; iter_++) {
 			this->sums[iter_] = pos.sums[iter_];
 		}
 		return *this;
@@ -163,23 +165,6 @@ void erase(tNode<ORDER>& t, double key) {
 }
 
 
-//объединяет два дерево в одно
-//template<int ORDER>
-//tNode<ORDER> unite(tNode<ORDER> l, tNode<ORDER> r) {
-//	if (!l || !r) {
-//		return l ? l : r;
-//	}
-//	if (l->priority < r->priority) {
-//		std::swap(l, r);
-//	}
-//	tNode lt, rt;
-//	split(r, l->key, lt, rt);
-//	l->l = unite(l->l, lt);
-//	l->r = unite(l->r, rt);
-//	return l;
-//}
-
-
 //функция подсчёта абсолютной величины, основанная на формуле биноминальный коэфициентов после раскрытия p-ого момента случайной величины. order - степень момента, t - дерево в котором считаем, repeater - костыль который остался от старых багов
 template<int ORDER>
 double countMomentFormula(tNode<ORDER>& t, const std::vector<double>& coefs_vec) {
@@ -191,14 +176,14 @@ double countMomentFormula(tNode<ORDER>& t, const std::vector<double>& coefs_vec)
 	double currDivKey = 1;
 	double secCurrDivKey = power(divKey, ORDER);
 	for (int iter_ = 0; iter_ <= ORDER; iter_ += 1) {
-		if (iter_ % 2 == 0) {
-			res += coefs_vec[iter_] * (currDivKey * (greater->sums[ORDER - iter_]) + secCurrDivKey * lesser->sums[iter_]);
-		}
-		else {
-			res -= coefs_vec[iter_] * (currDivKey * (greater->sums[ORDER - iter_]) + secCurrDivKey * lesser->sums[iter_]);
+		double a = coefs_vec[iter_] * (currDivKey * (greater->sums[ORDER - iter_]) + secCurrDivKey * lesser->sums[iter_]);
+
+		if (iter_ % 2 == 1) {
+			a *= -1.0;
 		}
 		currDivKey *= divKey;
 		secCurrDivKey /= divKey;
+		res += a;
 	}
 	merge<ORDER>(t, lesser, greater);
 
@@ -211,8 +196,6 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 	double result = 0.0;
 	double mean = 0.0;
 	int size = it_end - it_beg;
-	result = 0.0;
-	mean = 0.0;
 	for (auto it = it_beg; it != it_end; it += 1) {
 		mean += *it;
 	}
@@ -225,11 +208,11 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 
 
 template<int ORDER>
-double smartCountMomentTreap(Node<ORDER> root, const std::vector<double>& coefs_vec) {
+double smartCountMomentTreap(tNode<ORDER>& root, const std::vector<double>& coefs_vec) {
 	double res = 0.0;
-	Node<ORDER> currNode = root;
+	Node<ORDER> currNode = *root;
 	Node<ORDER> prevNode;
-	double divKey = root.sums[1] / root.sums[0];
+	double divKey = root->sums[1] / root->sums[0];
 
 	while (currNode.key >= divKey and currNode.l != nullptr) {
 		prevNode = currNode;
@@ -238,27 +221,29 @@ double smartCountMomentTreap(Node<ORDER> root, const std::vector<double>& coefs_
 
 	double nodeSums[ORDER + 1];
 	double lesserSums[ORDER + 1];
-	nodeSums[0] = 1;
-	lesserSums[0] = currNode.sums[0] + 1;
+	nodeSums[0] = 1.0;
+
 	for (int iter_ = 1; iter_ <= ORDER; iter_++) {
 		nodeSums[iter_] = nodeSums[iter_ - 1] * currNode.key;
+	}
+
+	for (int iter_ = 0; iter_ <= ORDER; iter_++) {
 		lesserSums[iter_] = nodeSums[iter_] + currNode.sums[iter_];
 	}
 
-	double currDivKey = 1;
+	double currDivKey = 1.0;
 	double secCurrDivKey = power(divKey, ORDER);
-	for (int iter_ = 0; iter_ <= ORDER; iter_ += 1) {
-		double a = coefs_vec[iter_] * (currDivKey * (root.sums[ORDER - iter_] - lesserSums[ORDER - iter_]) + secCurrDivKey * lesserSums[iter_]);
+	for (int iter_ = 0; iter_ <= ORDER; iter_++) {
+		double a = coefs_vec[iter_] * (currDivKey * (root->sums[ORDER - iter_] - lesserSums[ORDER - iter_]) + secCurrDivKey * lesserSums[iter_]);
 		if (iter_ % 2 == 1) {
-			a *= -1;
+			a *= -1.0;
 		}
-		res += a;
 		currDivKey *= divKey;
 		secCurrDivKey /= divKey;
+		res += a;
 	}
 	return res;
 }
-
 
 int main()
 {
@@ -266,7 +251,6 @@ int main()
 		std::cout << iter_ + 1 << std::endl;
 		double currKey = 0.0;
 		double currPrior = 0.0;
-		//const int repeat_counter = 1;
 		const int order = 4;
 		std::ofstream myfile1;
 		std::ofstream myfile2;
@@ -279,12 +263,13 @@ int main()
 		myfile1.open(treap_res_text);
 		myfile2.open(doublepass_res_text);
 
-		size_t a = 10000;
+		size_t a = 1000;
 		std::vector<std::vector<double>> coefs_vec = pTriangle(order);
 		std::vector<double> sample;
 		sample.resize(a);
 
 		std::mt19937 gen(1337);
+		//std::normal_distribution<double> dis(0.0, 1.0);
 		std::uniform_real_distribution<double> dis(0.0, 1.0);
 
 		std::vector<Node<order> > nodeSample;
@@ -309,13 +294,12 @@ int main()
 			//подсчёт времени работы с помощью формулы на струкртуре треапа
 			auto t_start1 = std::chrono::high_resolution_clock::now();
 			//double currPlaceholder1 = countMomentFormula<order>(root, coefs_vec[order]);
-			double currPlaceholder1 = smartCountMomentTreap<order>(*root, coefs_vec[order]);
+			double currPlaceholder1 = smartCountMomentTreap<order>(root, coefs_vec[order]);
 			auto t_finish1 = std::chrono::high_resolution_clock::now();
-			auto time_span1 =
-				std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(
-					t_finish1 - t_start1);
-			myfile1 << time_span1.count() << '\t'
-				<< currPlaceholder1 << std::endl;
+			auto time_span1 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(t_finish1 - t_start1);
+			myfile1 << time_span1.count() << '\t' << currPlaceholder1 << std::endl;
+
+
 
 			//подсчёт времени работы классического алгоритма в два прохода
 			auto t_start2 = std::chrono::high_resolution_clock::now();
@@ -324,8 +308,12 @@ int main()
 			auto time_span2 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish2 - t_start2);
 			myfile2 << time_span2.count() << '\t' << currPlaceholder2 << std::endl;
 
+
+
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
-			std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
+			std::cout << "------------------------------------------------" << std::endl;
+			std::cout << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl;
+			std::cout << "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
 		}
 	}
 }
