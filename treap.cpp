@@ -10,25 +10,25 @@
 
 
 //структура вершины-дерева, нулевой элемент суммы -- количество вершин в поддереве, а так sums хранит сумму всех степеней вплоть до n (\sum k^0, \sum k^1, \sum k^2, ...) для поддерева
-//template<int ORDER>
+template<int ORDER>
 struct Node {
-	int order = 0;
+	//int order = 0;
 	double key, sum, priority = 0;
 	//std::vector<double> sums = { 1 };
-	double* sums = new double[order + 1];
+	double* sums = new double[ORDER + 1];
 	Node* l, * r = nullptr;
 	Node() = default;
 	~Node() = default;
-	Node(double key, double priority, int order) : key(key), priority(priority), l(nullptr), r(nullptr), order(order) {
+	Node(double key, double priority /*int order*/) : key(key), priority(priority), l(nullptr), r(nullptr)/*, order(order)*/ {
 		sums[0] = 1;
-		for (int i = 1; i <= order; i += 1) {
+		for (int i = 1; i <= ORDER; i += 1) {
 			sums[i] = sums[i - 1] * key;
 		}
 	}
 };
 
-
-typedef Node* tNode;
+template<int ORDER>
+using tNode = Node<ORDER>*;
 
 
 //функция степени, которая работает быстрее и стабильнее std::pow
@@ -59,19 +59,20 @@ std::vector<std::vector<double>> pTriangle(int n) {
 
 
 //обновляет все n сумм (в зависимости от заданного порядка дерева).
-void updateSums(tNode t) {
+template<int ORDER>
+void updateSums(tNode<ORDER> t) {
 	if (t != nullptr) {
 		t->sums[0] = 1;
-		for (int iter_ = 1; iter_ <= t->order; iter_ += 1) {
+		for (int iter_ = 1; iter_ <= ORDER; iter_ += 1) {
 			t->sums[iter_] = t->sums[iter_ - 1] * t->key;
 		}
 		if (t->l != nullptr) {
-			for (int iter_ = 0; iter_ <= t->order; iter_ += 1) {
+			for (int iter_ = 0; iter_ <= ORDER; iter_ += 1) {
 				t->sums[iter_] += t->l->sums[iter_];
 			}
 		}
 		if (t->r != nullptr) {
-			for (int iter_ = 0; iter_ <= t->order; iter_ += 1) {
+			for (int iter_ = 0; iter_ <= ORDER; iter_ += 1) {
 				t->sums[iter_] += t->r->sums[iter_];
 			}
 		}
@@ -81,18 +82,19 @@ void updateSums(tNode t) {
 
 
 //сплитит дерево t в два дерево l и r по заданному ключу
-void split(tNode t, double key, tNode& l, tNode& r) {
+template<int ORDER>
+void split(tNode<ORDER> t, double key, tNode<ORDER>& l, tNode<ORDER>& r) {
 	if (!t)
 		l = r = nullptr;
 	else if (key < t->key) {
 		split(t->l, key, l, t->l);
 		r = t;
-		updateSums(r);
+		updateSums<ORDER>(r);
 	}
 	else {
 		split(t->r, key, t->r, r);
 		l = t;
-		updateSums(l);
+		updateSums<ORDER>(l);
 	}
 	//updateSums(l);
 	//updateSums(r);
@@ -101,7 +103,8 @@ void split(tNode t, double key, tNode& l, tNode& r) {
 
 
 //вставляет в дерево t вершину it
-void insert(tNode& t, tNode it) {
+template<int ORDER>
+void insert(tNode<ORDER>& t, tNode<ORDER> it) {
 	if (!t) {
 		t = it;
 	}
@@ -112,12 +115,13 @@ void insert(tNode& t, tNode it) {
 	else {
 		insert(it->key < t->key ? t->l : t->r, it);
 	}
-	updateSums(t);
+	updateSums<ORDER>(t);
 }
 
 
 //мержит деревья l и r в дерево t
-void merge(tNode& t, tNode l, tNode r) {
+template<int ORDER>
+void merge(tNode<ORDER>& t, tNode<ORDER> l, tNode<ORDER> r) {
 	if (!l || !r) {
 		t = l ? l : r;
 	}
@@ -129,24 +133,26 @@ void merge(tNode& t, tNode l, tNode r) {
 		merge(r->l, l, r->l);
 		t = r;
 	}
-	updateSums(t);
+	updateSums<ORDER>(t);
 }
 
 
 //удаляет вершину с ключом key из дерева t
-void erase(tNode& t, double key) {
+template<int ORDER>
+void erase(tNode<ORDER>& t, double key) {
 	if (t->key == key) {
 		merge(t, t->l, t->r);
 	}
 	else {
 		erase(key < t->key ? t->l : t->r, key);
 	}
-	updateSums(t);
+	updateSums<ORDER>(t);
 }
 
 
 //объединяет два дерево в одно
-tNode unite(tNode l, tNode r) {
+template<int ORDER>
+tNode<ORDER> unite(tNode<ORDER> l, tNode<ORDER> r) {
 	if (!l || !r) {
 		return l ? l : r;
 	}
@@ -162,12 +168,13 @@ tNode unite(tNode l, tNode r) {
 
 
 //функция подсчёта абсолютной величины, основанная на формуле биноминальный коэфициентов после раскрытия p-ого момента случайной величины. order - степень момента, t - дерево в котором считаем, repeater - костыль который остался от старых багов
-double countMomentFormula(int order, tNode& t, std::vector<double> coefs_vec) {
+template<int ORDER>
+double countMomentFormula(int order, tNode<ORDER>& t, std::vector<double> coefs_vec) {
 	double res = 0.0;
-	Node* lesser = nullptr;
-	Node* greater = nullptr;
+	Node<ORDER>* lesser = nullptr;
+	Node<ORDER>* greater = nullptr;
 	double divKey = t->sums[1] / t->sums[0];
-	split(t, divKey, lesser, greater);
+	split<ORDER>(t, divKey, lesser, greater);
 	double currDivKey = 1;
 	double secCurrDivKey = power(divKey, order);
 	for (int iter_ = 0; iter_ <= order; iter_ += 1) {
@@ -180,7 +187,7 @@ double countMomentFormula(int order, tNode& t, std::vector<double> coefs_vec) {
 		currDivKey *= divKey;
 		secCurrDivKey /= divKey;
 	}
-	merge(t, lesser, greater);
+	merge<ORDER>(t, lesser, greater);
 
 	return res;
 }
@@ -205,6 +212,8 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 
 
 //кастомный дестркутор дерева
+/*
+
 void deleteTree(Node* tree) {
 	std::queue<Node*> qDelet;
 	qDelet.push(tree);
@@ -220,7 +229,7 @@ void deleteTree(Node* tree) {
 		qDelet.pop();
 	}
 }
-
+*/
 
 int main()
 {
@@ -229,7 +238,7 @@ int main()
 		double currKey = 0.0;
 		double currPrior = 0.0;
 		const int repeat_counter = 1;
-		int order = 5;
+		const int order = 4;
 		std::ofstream myfile1;
 		std::ofstream myfile2;
 		std::string treap_res_text = "txt_output/treap_results_new";
@@ -243,34 +252,26 @@ int main()
 		int a = 10000;
 		std::vector<std::vector<double>> coefs_vec = pTriangle(order);
 		std::vector<double> sample;
-		std::vector<Node*> nodeSample;
+		std::vector<Node<order>*> nodeSample;
 		nodeSample.reserve(10001);
 		sample.reserve(10000);
-		currKey = rand() % a;
-		currKey /= a;
-		currPrior = rand() % 100;
-		currPrior /= 100;
-		//Node* tree = new Node(currKey, currPrior, order);
-		nodeSample[0] = new Node(currKey, currPrior, order);
-		//nodeSample.push_back(tree);
+		std::random_device generatror;
+		std::mt19937 gen(generatror());
+		std::uniform_real_distribution<> dis(0.0, 1.0);
+		currKey = dis(gen);
+		currPrior = dis(gen);
+		nodeSample[0] = new Node<order>(currKey, currPrior);
 		sample[0] = currKey;
 		for (int i = 0; i < a; i++) {
-			currKey = rand() % a;
-			currKey /= (a / 10);
-			currPrior = rand() % (i + 100);
-			currPrior /= (i + 100);
-			//Node* curr = new Node(currKey, currPrior, order);
-			nodeSample[i + 1] = new Node(currKey, currPrior, order);
-			insert(nodeSample[0], nodeSample[i + 1]);
-			//nodeSample.push_back(curr);
-			//insert(tree, curr);
+			currKey = dis(gen);
+			currPrior = dis(gen);
+			nodeSample[i + 1] = new Node<order>(currKey, currPrior);
+			insert<order>(nodeSample[0], nodeSample[i + 1]);
 			sample[i + 1] = currKey;
-			//sample.push_back(currKey);
 
 			//подсчёт времени работы с помощью формулы на струкртуре треапа
 			std::chrono::high_resolution_clock::time_point t_start1 = std::chrono::high_resolution_clock::now();
-			//double currPlaceholder1 = countMomentFormula(order, tree, coefs_vec[order]);
-			double currPlaceholder1 = countMomentFormula(order, nodeSample[0], coefs_vec[order]);
+			double currPlaceholder1 = countMomentFormula<order>(order, nodeSample[0], coefs_vec[order]);
 			std::chrono::high_resolution_clock::time_point t_finish1 = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> time_span1 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish1 - t_start1);
 			myfile1 << (time_span1.count() / repeat_counter) << '\t' << currPlaceholder1 << std::endl;
@@ -283,8 +284,7 @@ int main()
 			myfile2 << (time_span2.count() / repeat_counter) << '\t' << currPlaceholder2 << std::endl;
 
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
-			std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
+			//std::cout << "------------------------------------------------" << std::endl << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl << "     time of 2pass = " << time_span2.count() / repeat_counter << " time of treap " << time_span1.count() / repeat_counter << std::endl;
 		}
-		//deleteTree(tree);
 	}
 }
