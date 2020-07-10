@@ -62,15 +62,15 @@ double power(double base, int pwr) {
 //Треугольник Паскаля для подсчёта биноминальных коэффициентов
 std::vector<std::vector<double>> pTriangle(int n) {
 	std::vector<std::vector<double>> results(n + 1);
-	results[0].push_back(1);
-	results[1].push_back(1);
-	results[1].push_back(1);
+	results[0].push_back(1.0);
+	results[1].push_back(1.0);
+	results[1].push_back(1.0);
 	for (int iter_ = 2; iter_ <= n; iter_++) {
-		results[iter_].push_back(1);
+		results[iter_].push_back(1.0);
 		for (int jiter_ = 1; jiter_ < iter_; jiter_++) {
 			results[iter_].push_back(results[iter_ - 1][jiter_ - 1] + results[iter_ - 1][jiter_]);
 		}
-		results[iter_].push_back(1);
+		results[iter_].push_back(1.0);
 	}
 	return results;
 }
@@ -173,7 +173,7 @@ double countMomentFormula(tNode<ORDER>& t, const std::vector<double>& coefs_vec)
 	Node<ORDER>* greater = nullptr;
 	double divKey = t->sums[1] / t->sums[0];
 	split<ORDER>(t, divKey, lesser, greater);
-	double currDivKey = 1;
+	double currDivKey = 1.0;
 	double secCurrDivKey = power(divKey, ORDER);
 	for (int iter_ = 0; iter_ <= ORDER; iter_ += 1) {
 		double a = coefs_vec[iter_] * (currDivKey * (greater->sums[ORDER - iter_]) + secCurrDivKey * lesser->sums[iter_]);
@@ -195,6 +195,7 @@ double countMomentFormula(tNode<ORDER>& t, const std::vector<double>& coefs_vec)
 double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, std::vector<double>::const_iterator it_end) {
 	double result = 0.0;
 	double mean = 0.0;
+	int check;
 	int size = it_end - it_beg;
 	for (auto it = it_beg; it != it_end; it += 1) {
 		mean += *it;
@@ -211,25 +212,42 @@ template<int ORDER>
 double smartCountMomentTreap(tNode<ORDER>& root, const std::vector<double>& coefs_vec) {
 	double res = 0.0;
 	Node<ORDER> currNode = *root;
-	Node<ORDER> prevNode;
 	double divKey = root->sums[1] / root->sums[0];
-
-	while (currNode.key >= divKey and currNode.l != nullptr) {
-		prevNode = currNode;
-		currNode = *currNode.l;
-	}
+	std::cout << "slit key is " << divKey << std::endl;
 
 	double nodeSums[ORDER + 1];
 	double lesserSums[ORDER + 1];
 	nodeSums[0] = 1.0;
-
-	for (int iter_ = 1; iter_ <= ORDER; iter_++) {
-		nodeSums[iter_] = nodeSums[iter_ - 1] * currNode.key;
+	if (root->key > divKey) {
+		while (currNode.key >= divKey and currNode.l != nullptr) {
+			currNode = *currNode.l;
+		}
+		for (int iter_ = 1; iter_ <= ORDER; iter_++) {
+			nodeSums[iter_] = nodeSums[iter_ - 1] * currNode.key;
+		}
+		for (int iter_ = 0; iter_ <= ORDER; iter_++){
+			lesserSums[iter_] = nodeSums[iter_];
+			if (currNode.l != nullptr) {
+				lesserSums[iter_] += currNode.l->sums[iter_];
+			}
+		}
+	}
+	else {
+		while (currNode.key < divKey and currNode.r != nullptr) {
+			currNode = *currNode.r;
+		}
+		for (int iter_ = 1; iter_ <= ORDER; iter_++) {
+			nodeSums[iter_] = nodeSums[iter_ - 1] * currNode.key;
+		}
+		for (int iter_ = 0; iter_ <= ORDER; iter_++) {
+			lesserSums[iter_] = root->sums[iter_] - nodeSums[iter_];
+			if (currNode.r != nullptr) {
+				lesserSums[iter_] -= currNode.r->sums[iter_];
+			}
+		}
 	}
 
-	for (int iter_ = 0; iter_ <= ORDER; iter_++) {
-		lesserSums[iter_] = nodeSums[iter_] + currNode.sums[iter_];
-	}
+
 
 	double currDivKey = 1.0;
 	double secCurrDivKey = power(divKey, ORDER);
@@ -251,7 +269,7 @@ int main()
 		std::cout << iter_ + 1 << std::endl;
 		double currKey = 0.0;
 		double currPrior = 0.0;
-		const int order = 4;
+		const int order = 3;
 		std::ofstream myfile1;
 		std::ofstream myfile2;
 		std::string treap_res_text = "txt_output/treap_results_new";
@@ -276,17 +294,22 @@ int main()
 		nodeSample.resize(a);
 
 		currKey = dis(gen);
-		currPrior = dis(gen);
+		currPrior = dis(gen)+0.1;
 
 		nodeSample[0] = Node<order>(currKey, currPrior);
 		sample[0] = currKey;
 
 		tNode<order> root = &(nodeSample[0]);
+		//std::cout << sample[0] << std::endl;
 
 		for (size_t i = 1; i < a; i++) {
 			currKey = dis(gen);
 			currPrior = dis(gen);
 			sample[i] = currKey;
+			//for (int j = 0; j <= i; j++) {
+			//	std::cout << sample[j] << std::endl;
+			//}
+
 
 			nodeSample[i] = Node<order>(currKey, currPrior);
 			insert<order>(root, &(nodeSample[i]));
@@ -313,7 +336,7 @@ int main()
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
 			std::cout << "------------------------------------------------" << std::endl;
 			std::cout << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl;
-			std::cout << "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
+			std::cout<< "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
 		}
 	}
 }
