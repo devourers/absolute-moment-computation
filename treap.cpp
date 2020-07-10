@@ -173,14 +173,11 @@ void traverse(tNode<ORDER> node, double* accumulator, double mean) {
 		}
 		else {
 			double k_i = 1.0;
-			accumulator[0] += 1.0;
 			for (int iter_ = 0; iter_ <= ORDER; iter_++) {
 				if (node->l != nullptr) {
 					accumulator[iter_] += node->l->sums[iter_];
 				}
-				if (iter_ > 0) {
-					accumulator[iter_] += k_i;
-				}
+				accumulator[iter_] += k_i;
 				k_i *= node->key;
 			}
 			traverse(node->r, accumulator, mean);
@@ -219,7 +216,7 @@ int main()
 		std::cout << iter_ + 1 << std::endl;
 		double currKey = 0.0;
 		double currPrior = 0.0;
-		const int order = 1;
+		const int order = 5;
 		std::ofstream myfile1;
 		std::ofstream myfile2;
 		std::string treap_res_text = "txt_output/treap_results_new";
@@ -244,7 +241,7 @@ int main()
 		nodeSample.resize(a);
 
 		currKey = dis(gen);
-		currPrior = dis(gen)+0.1;
+		currPrior = dis(gen);
 
 		nodeSample[0] = Node<order>(currKey, currPrior);
 		sample[0] = currKey;
