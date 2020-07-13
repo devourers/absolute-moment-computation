@@ -148,18 +148,18 @@ void merge(tNode<ORDER>& t, tNode<ORDER> l, tNode<ORDER> r) {
 double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, std::vector<double>::const_iterator it_end) {
 	double result = 0.0;
 	double mean = 0.0;
-	int check;
 	int size = it_end - it_beg;
 	for (auto it = it_beg; it != it_end; it++) {
 		mean += *it;
 	}
 	mean /= size;
 	for (auto it = it_beg; it != it_end; it++) {
-		result += power(std::abs(*it - mean), p);
+		result += power(std::fabs(*it - mean), p);
 	}
 	return result;
 }
 
+//вспомогательная функция для поиска меньшего дерева из split(mean)
 template<int ORDER>
 void traverse(tNode<ORDER> node, double* accumulator, double mean) {
 	if (node == nullptr){
@@ -210,13 +210,15 @@ double smartCountMomentTreap(tNode<ORDER> root, const std::vector<double>& coefs
 	return res;
 }
 
+
 int main()
 {
-	for (int iter_ = 0; iter_ < 1; iter_++) {
-		std::cout << iter_ + 1 << std::endl;
+	int rep_cout = 1;
+	for (int iter_ = 0; iter_ < rep_cout; iter_++) {
+		std::cout << iter_ + 1 << "/" << rep_cout << " in progress." << std::endl;
 		double currKey = 0.0;
 		double currPrior = 0.0;
-		const int order = 5;
+		const int order = 3;
 		std::ofstream myfile1;
 		std::ofstream myfile2;
 		std::string treap_res_text = "txt_output/treap_results_new";
@@ -279,5 +281,6 @@ int main()
 			std::cout << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl;
 			std::cout<< "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
 		}
+		std::cout << iter_ + 1 << "/" << rep_cout << " done." << std::endl;
 	}
 }
