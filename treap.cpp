@@ -160,20 +160,21 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 }
 
 
-double* countSmartMomentVect(const int p, double prev_mean, double new_value, int curr_place, std::vector<double> curr_sample) {
-	std::cout << prev_mean << std::endl;
-	std::cout << curr_place << std::endl;
-	std::cout << new_value << std::endl;
+std::pair<double, double> CountSmartMomentVect(const int p, double prev_mean, double new_value, int curr_place, const std::vector<double>& curr_sample) {
+	//std::cout << prev_mean << std::endl;
+	//std::cout << curr_place << std::endl;
+	//std::cout << new_value << std::endl;
 	double result = 0.0;
 	double mean = (prev_mean * curr_place + new_value) / (curr_place + 1.0);
-	std::cout << mean << std::endl;
-	for (int iter_ = 0; iter_ < curr_place; iter_++){
+	//std::cout << mean << std::endl;
+	for (int iter_ = 0; iter_ < curr_place; iter_++) {
 		result += std::fabs(power((curr_sample[iter_] - mean), p));
 	}
 	result += std::fabs(power((new_value - mean), p));
-	double res[2];
-	res[0] = result;
-	res[1] = mean;
+	std::pair<double, double> res;
+	//double* res = new double[2];
+	res.first = result;
+	res.second = mean;
 	return res;
 }
 
@@ -274,7 +275,7 @@ int main()
 		std::cout << iter_ + 1 << "/" << rep_cout << " in progress." << std::endl;
 		double currKey = 0.0;
 		double currPrior = 0.0;
-		const int order = 1;
+		const int order = 4;
 		int check = 0;
 		std::ofstream myfile1;
 		std::ofstream myfile2;
@@ -287,7 +288,7 @@ int main()
 		myfile1.open(treap_res_text);
 		myfile2.open(doublepass_res_text);
 
-		size_t a = 1000;
+		size_t a = 1000000;
 		std::vector<std::vector<double>> coefs_vec = pTriangle(order);
 		std::vector<double> sample;
 		sample.resize(a);
@@ -338,17 +339,17 @@ int main()
 
 			//подсчёт времени работы классического алгоритма в два прохода
 			auto t_start2 = std::chrono::high_resolution_clock::now();
-			double* currPlaceholder2 = countSmartMomentVect(order, curr_mean,  currKey, i, sample);
+			std::pair<double, double> currPlaceholder2 = CountSmartMomentVect(order, curr_mean, currKey, i, sample);
 			auto t_finish2 = std::chrono::high_resolution_clock::now();
 			auto time_span2 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish2 - t_start2);
-			myfile2 << time_span2.count() << '\t' << currPlaceholder2[0] << std::endl;
+			myfile2 << time_span2.count() << '\t' << currPlaceholder2.first << std::endl;
 
 			sample[i] = currKey;
-			curr_mean = currPlaceholder2[1];
+			curr_mean = currPlaceholder2.second;
 
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
 			std::cout << "------------------------------------------------" << std::endl;
-			std::cout << i << "| " << currPlaceholder1 << " - " << currPlaceholder2[0] << " = delta " << currPlaceholder1 - currPlaceholder2[0] << ";" << std::endl;
+			std::cout << i << "| " << currPlaceholder1 << " - " << currPlaceholder2.first << " = delta " << currPlaceholder1 - currPlaceholder2.first << ";" << std::endl;
 			std::cout<< "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
 			std::cin >> check;
 		}
