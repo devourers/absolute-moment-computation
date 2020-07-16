@@ -161,21 +161,13 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 
 
 std::pair<double, double> CountSmartMomentVect(const int p, double prev_mean, double new_value, int curr_place, const std::vector<double>& curr_sample) {
-	//std::cout << prev_mean << std::endl;
-	//std::cout << curr_place << std::endl;
-	//std::cout << new_value << std::endl;
 	double result = 0.0;
 	double mean = (prev_mean * curr_place + new_value) / (curr_place + 1.0);
-	//std::cout << mean << std::endl;
 	for (int iter_ = 0; iter_ < curr_place; iter_++) {
 		result += std::fabs(power((curr_sample[iter_] - mean), p));
 	}
 	result += std::fabs(power((new_value - mean), p));
-	std::pair<double, double> res;
-	//double* res = new double[2];
-	res.first = result;
-	res.second = mean;
-	return res;
+	return { result, mean };
 }
 
 //вспомогательная функция для поиска меньшего дерева из split(mean)
