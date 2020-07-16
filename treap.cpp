@@ -306,9 +306,7 @@ int main()
 			currPrior = dis(gen);
 
 
-
 			nodeSample[i] = Node<order>(currKey, currPrior);
-			//insert<order>(root, &(nodeSample[i]));
 
 
 			//подсчёт времени работы с помощью формулы на струкртуре треапа
@@ -320,15 +318,6 @@ int main()
 			myfile1 << time_span1.count() << '\t' << currPlaceholder1 << std::endl;
 
 
-			/*
-			//подсчёт времени работы классического алгоритма в два прохода
-			auto t_start2 = std::chrono::high_resolution_clock::now();
-			double currPlaceholder2 = countMomentVect(order, sample.cbegin(), sample.cbegin() + i + 1);
-			auto t_finish2 = std::chrono::high_resolution_clock::now();
-			auto time_span2 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish2 - t_start2);
-			myfile2 << time_span2.count() << '\t' << currPlaceholder2 << std::endl;
-			*/
-
 			//подсчёт времени работы классического алгоритма в два прохода
 			auto t_start2 = std::chrono::high_resolution_clock::now();
 			std::pair<double, double> currPlaceholder2 = CountSmartMomentVect(order, curr_mean, currKey, i, sample);
@@ -336,15 +325,18 @@ int main()
 			auto time_span2 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish2 - t_start2);
 			myfile2 << time_span2.count() << '\t' << currPlaceholder2.first << std::endl;
 
+
 			sample[i] = currKey;
 			curr_mean = currPlaceholder2.second;
+
 
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
 			std::cout << "------------------------------------------------" << std::endl;
 			std::cout << i << "| " << currPlaceholder1 << " - " << currPlaceholder2.first << " = delta " << currPlaceholder1 - currPlaceholder2.first << ";" << std::endl;
 			std::cout<< "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
-			std::cin >> check;
+			//std::cin >> check;
 		}
+
 		std::cout << iter_ + 1 << "/" << rep_cout << " done." << std::endl;
 	}
 }
