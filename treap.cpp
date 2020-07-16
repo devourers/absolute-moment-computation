@@ -159,6 +159,20 @@ double countMomentVect(const int p, std::vector<double>::const_iterator it_beg, 
 	return result;
 }
 
+double countNonAbsoulteMomentVect(const int p, std::vector<double>::const_iterator it_beg, std::vector<double>::const_iterator it_end) {
+	double result = 0.0;
+	double mean = 0.0;
+	int size = it_end - it_beg;
+	for (auto it = it_beg; it != it_end; it++) {
+		mean += *it;
+	}
+	mean /= size;
+	for (auto it = it_beg; it != it_end; it++) {
+		result += power(*it - mean, p);
+	}
+	return result;
+}
+
 //вспомогательная функция для поиска меньшего дерева из split(mean)
 template<int ORDER>
 void traverse(tNode<ORDER> node, double* accumulator, double mean) {
@@ -210,15 +224,35 @@ double smartCountMomentTreap(tNode<ORDER> root, const std::vector<double>& coefs
 	return res;
 }
 
+template<int ORDER>
+double countNonAbsoluteMomentTreap(tNode<ORDER> root, const std::vector<double>& coefs_vec) {
+	double mean = root->sums[1] / root->sums[0];
+	double res = 0.0;
+	return std::fabs(root->sums[ORDER]);
+	double CurrDivKey = power(mean, ORDER);
+	for (int iter_ = 0; iter_ <= ORDER; iter_++) {
+		double a = coefs_vec[iter_] * CurrDivKey * root->sums[iter_];
+		if (iter_ % 2 == 1) {
+			a *= -1.0;
+		}
+		CurrDivKey /= mean;
+		res += a;
+	}
+}
+
+template<int ORDER>
+double countNonCentralAbsouluteMomentTreap(tNode<ORDER> root) {
+	return std::fabs(root->sums[ORDER]);
+}
 
 int main()
 {
-	int rep_cout = 1;
+	int rep_cout = 21;
 	for (int iter_ = 0; iter_ < rep_cout; iter_++) {
-		std::cout << iter_ + 1 << "/" << rep_cout << " in progress." << std::endl;
+		//std::cout << iter_ + 1 << "/" << rep_cout << " in progress." << std::endl;
 		double currKey = 0.0;
 		double currPrior = 0.0;
-		const int order = 3;
+		const int order = 1;
 		std::ofstream myfile1;
 		std::ofstream myfile2;
 		std::string treap_res_text = "txt_output/treap_results_new";
@@ -230,7 +264,7 @@ int main()
 		myfile1.open(treap_res_text);
 		myfile2.open(doublepass_res_text);
 
-		size_t a = 1000;
+		size_t a = 10000;
 		std::vector<std::vector<double>> coefs_vec = pTriangle(order);
 		std::vector<double> sample;
 		sample.resize(a);
@@ -257,11 +291,12 @@ int main()
 
 
 			nodeSample[i] = Node<order>(currKey, currPrior);
-			insert<order>(root, &(nodeSample[i]));
+			//insert<order>(root, &(nodeSample[i]));
 
 
 			//подсчёт времени работы с помощью формулы на струкртуре треапа
 			auto t_start1 = std::chrono::high_resolution_clock::now();
+			insert<order>(root, &(nodeSample[i]));
 			double currPlaceholder1 = smartCountMomentTreap<order>(root, coefs_vec[order]);
 			auto t_finish1 = std::chrono::high_resolution_clock::now();
 			auto time_span1 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(t_finish1 - t_start1);
@@ -277,10 +312,10 @@ int main()
 
 
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
-			std::cout << "------------------------------------------------" << std::endl;
-			std::cout << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl;
-			std::cout<< "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
+			//std::cout << "------------------------------------------------" << std::endl;
+			//std::cout << i << "| " << currPlaceholder1 << " - " << currPlaceholder2 << " = delta " << currPlaceholder1 - currPlaceholder2 << ";" << std::endl;
+			//std::cout<< "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
 		}
-		std::cout << iter_ + 1 << "/" << rep_cout << " done." << std::endl;
+		//std::cout << iter_ + 1 << "/" << rep_cout << " done." << std::endl;
 	}
 }
