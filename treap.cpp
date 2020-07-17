@@ -7,6 +7,9 @@
 #include <chrono>
 #include <cmath>
 #include <queue>
+#include <filesystem>
+#include <cstdlib>
+#include <direct.h>
 
 
 //структура вершины-дерева, нулевой элемент суммы -- количество вершин в поддереве, а так sums хранит сумму всех степеней вплоть до n (\sum k^0, \sum k^1, \sum k^2, ...) для поддерева
@@ -260,28 +263,40 @@ double countNonCentralAbsouluteMomentTreap(tNode<ORDER> root) {
 	return std::fabs(root->sums[ORDER]);
 }
 
-int main()
-{
-	int rep_cout = 21;
-	for (int iter_ = 0; iter_ < rep_cout; iter_++) {
-		std::cout << iter_ + 1 << "/" << rep_cout << " in progress." << std::endl;
+
+template<int ORDER>
+void gatherStatistics(int repeater_counter, size_t samplesize) {
+	std::cout << "Simulation: " << std::endl;
+	std::cout << "Sample size = " << samplesize << "; Order = " << ORDER << std::endl;
+	std::string output_dir = "txt_output/";
+	const char* output_dir_output = output_dir.c_str();
+	_mkdir(output_dir_output);
+	for (int iter_ = 0; iter_ < repeater_counter; iter_++) {
+		std::cout << iter_ + 1 << "/" << repeater_counter << " in progress." << std::endl;
 		double currKey = 0.0;
 		double currPrior = 0.0;
-		const int order = 4;
-		int check = 0;
 		std::ofstream myfile1;
 		std::ofstream myfile2;
-		std::string treap_res_text = "txt_output/treap_results_new";
-		treap_res_text += std::to_string(iter_);
+		std::string order_dir = "txt_output/";
+		order_dir += std::to_string(ORDER);
+		order_dir += "/";
+		const char* order_dir_c = order_dir.c_str();
+		_mkdir(order_dir_c);
+		std::string treap_res_text = order_dir + "treap_results_order";
+		treap_res_text += std::to_string(ORDER);
+		treap_res_text += "_";
+		treap_res_text += std::to_string(iter_ + 1);
 		treap_res_text += ".txt";
-		std::string doublepass_res_text = "txt_output/2pass_results";
-		doublepass_res_text += std::to_string(iter_);
+		std::string doublepass_res_text = order_dir + "2pass_results_order";
+		doublepass_res_text += std::to_string(ORDER);
+		doublepass_res_text += "_";
+		doublepass_res_text += std::to_string(iter_ + 1);
 		doublepass_res_text += ".txt";
 		myfile1.open(treap_res_text);
 		myfile2.open(doublepass_res_text);
 
-		size_t a = 1000000;
-		std::vector<std::vector<double>> coefs_vec = pTriangle(order);
+		size_t a = samplesize;
+		std::vector<std::vector<double>> coefs_vec = pTriangle(ORDER);
 		std::vector<double> sample;
 		sample.resize(a);
 
@@ -289,16 +304,16 @@ int main()
 		//std::normal_distribution<double> dis(0.0, 1.0);
 		std::uniform_real_distribution<double> dis(0.0, 1.0);
 
-		std::vector<Node<order> > nodeSample;
+		std::vector<Node<ORDER> > nodeSample;
 		nodeSample.resize(a);
 
 		currKey = dis(gen);
 		currPrior = dis(gen);
 
-		nodeSample[0] = Node<order>(currKey, currPrior);
+		nodeSample[0] = Node<ORDER>(currKey, currPrior);
 		sample[0] = currKey;
 
-		tNode<order> root = &(nodeSample[0]);
+		tNode<ORDER> root = &(nodeSample[0]);
 		double curr_mean = sample[0];
 
 		for (size_t i = 1; i < a; i++) {
@@ -306,13 +321,13 @@ int main()
 			currPrior = dis(gen);
 
 
-			nodeSample[i] = Node<order>(currKey, currPrior);
+			nodeSample[i] = Node<ORDER>(currKey, currPrior);
 
 
 			//подсчёт времени работы с помощью формулы на струкртуре треапа
 			auto t_start1 = std::chrono::high_resolution_clock::now();
-			insert<order>(root, &(nodeSample[i]));
-			double currPlaceholder1 = smartCountMomentTreap<order>(root, coefs_vec[order]);
+			insert<ORDER>(root, &(nodeSample[i]));
+			double currPlaceholder1 = smartCountMomentTreap<ORDER>(root, coefs_vec[ORDER]);
 			auto t_finish1 = std::chrono::high_resolution_clock::now();
 			auto time_span1 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(t_finish1 - t_start1);
 			myfile1 << time_span1.count() << '\t' << currPlaceholder1 << std::endl;
@@ -320,7 +335,7 @@ int main()
 
 			//подсчёт времени работы классического алгоритма в два прохода
 			auto t_start2 = std::chrono::high_resolution_clock::now();
-			std::pair<double, double> currPlaceholder2 = CountSmartMomentVect(order, curr_mean, currKey, i, sample);
+			std::pair<double, double> currPlaceholder2 = CountSmartMomentVect(ORDER, curr_mean, currKey, i, sample);
 			auto t_finish2 = std::chrono::high_resolution_clock::now();
 			auto time_span2 = std::chrono::duration_cast<std::chrono::duration<double, std::nano>> (t_finish2 - t_start2);
 			myfile2 << time_span2.count() << '\t' << currPlaceholder2.first << std::endl;
@@ -331,12 +346,24 @@ int main()
 
 
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
-			std::cout << "------------------------------------------------" << std::endl;
-			std::cout << i << "| " << currPlaceholder1 << " - " << currPlaceholder2.first << " = delta " << currPlaceholder1 - currPlaceholder2.first << ";" << std::endl;
-			std::cout<< "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
-			//std::cin >> check;
+			//std::cout << "------------------------------------------------" << std::endl;
+			//std::cout << i << "| " << currPlaceholder1 << " - " << currPlaceholder2.first << " = delta " << currPlaceholder1 - currPlaceholder2.first << ";" << std::endl;
+			//std::cout << "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
 		}
-
-		std::cout << iter_ + 1 << "/" << rep_cout << " done." << std::endl;
+		std::cout << iter_ + 1 << "/" << repeater_counter << " done." << std::endl;
 	}
+};
+
+int main()
+{
+	size_t b = 100000;
+	gatherStatistics<9>(21, b);
+	gatherStatistics<8>(21, b);
+	gatherStatistics<7>(21, b);
+	gatherStatistics<6>(21, b);
+	gatherStatistics<5>(21, b);
+	gatherStatistics<4>(21, b);
+	gatherStatistics<3>(21, b);
+	gatherStatistics<2>(21, b);
+	gatherStatistics<1>(21, b);
 }
