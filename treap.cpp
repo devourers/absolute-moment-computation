@@ -176,7 +176,7 @@ std::pair<double, double> CountSmartMomentVect(const int p, double prev_mean, do
 //вспомогательная функция для поиска меньшего дерева из split(mean)
 template<int ORDER>
 void traverse(tNode<ORDER> node, double* accumulator, double mean) {
-	if (node == nullptr){
+	if (node == nullptr) {
 	}
 	else {
 		if (node->key > mean) {
@@ -266,12 +266,14 @@ double countNonCentralAbsouluteMomentTreap(tNode<ORDER> root) {
 
 template<int ORDER>
 void gatherStatistics(int repeater_counter, size_t samplesize) {
+	double finaltime = 0.0;
 	std::cout << "Simulation: " << std::endl;
 	std::cout << "Sample size = " << samplesize << "; Order = " << ORDER << std::endl;
 	std::string output_dir = "txt_output/";
 	const char* output_dir_output = output_dir.c_str();
 	_mkdir(output_dir_output);
 	for (int iter_ = 0; iter_ < repeater_counter; iter_++) {
+		double cycletime = 0.0;
 		std::cout << iter_ + 1 << "/" << repeater_counter << " in progress." << std::endl;
 		double currKey = 0.0;
 		double currPrior = 0.0;
@@ -343,7 +345,8 @@ void gatherStatistics(int repeater_counter, size_t samplesize) {
 
 			sample[i] = currKey;
 			curr_mean = currPlaceholder2.second;
-
+			cycletime += time_span1.count();
+			cycletime += time_span2.count();
 
 			//информация во время компиляции по поводу разности между результатами на треапе и векторе, а так же время которое понадобилось на подсчёт на данном этапе
 			//std::cout << "------------------------------------------------" << std::endl;
@@ -351,19 +354,22 @@ void gatherStatistics(int repeater_counter, size_t samplesize) {
 			//std::cout << "     time of 2pass = " << time_span2.count() << " time of treap = " << time_span1.count() << std::endl;
 		}
 		std::cout << iter_ + 1 << "/" << repeater_counter << " done." << std::endl;
+		std::cout << "Total time in current iteration: " << cycletime << std::endl;
+		finaltime += cycletime;
 	}
+	std::cout << "Mean time across all " << repeater_counter << " simulations is " << finaltime / repeater_counter << std::endl;
 };
 
 int main()
 {
-	size_t b = 100000;
-	gatherStatistics<9>(21, b);
-	gatherStatistics<8>(21, b);
-	gatherStatistics<7>(21, b);
-	gatherStatistics<6>(21, b);
-	gatherStatistics<5>(21, b);
-	gatherStatistics<4>(21, b);
-	gatherStatistics<3>(21, b);
-	gatherStatistics<2>(21, b);
+	size_t b = 10000;
 	gatherStatistics<1>(21, b);
+	gatherStatistics<2>(21, b);
+	gatherStatistics<3>(21, b);
+	gatherStatistics<4>(21, b);
+	gatherStatistics<5>(21, b);
+	gatherStatistics<6>(21, b);
+	gatherStatistics<7>(21, b);
+	gatherStatistics<8>(21, b);
+	gatherStatistics<9>(21, b);
 }
